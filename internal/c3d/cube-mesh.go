@@ -8,24 +8,20 @@ import (
 // CubeMesh is a utility struct that builds cube-based meshes.
 type CubeMesh struct {
 	Mesh
-	d     []float32 // Raw mesh data
-	aPos  int32     // pos attribute location
-	aTex  int32     // tex attribute location
-	aNorm int32     // norm attribute location
+	glStarted  bool      // If true, all OpenGL state changes required have happened
+	drawn      bool      // If true, the CubeMesh has been drawn at least once before.
+	vboCurrent bool      // If false, the VBO needs to be reuploaded.
+	d          []float32 // Raw mesh data
+	aPos       int32     // pos attribute location
+	aTex       int32     // tex attribute location
+	aNorm      int32     // norm attribute location
 }
 
-// newCubeMesh constructs a new CubeMesh object ready for use.
-func newCubeMesh(prg *Program) *CubeMesh {
-	ret := &CubeMesh{
+// NewCubeMesh constructs a new CubeMesh object ready for use.
+func NewCubeMesh() *CubeMesh {
+	return &CubeMesh{
 		d: make([]float32, 0, 256*256),
 	}
-	ret.aPos = prg.GetAttributeLocation("pos")
-	ret.aTex = prg.GetAttributeLocation("texPos")
-	ret.aNorm = prg.GetAttributeLocation("norm")
-	ret.uWorld = prg.GetUniformLocation("world")
-	gl.GenVertexArrays(1, &ret.vao)
-	gl.GenBuffers(1, &ret.vbo)
-	return ret
 }
 
 // AddFace adds a face at the given position with the given normal. The face
@@ -45,6 +41,7 @@ func (m *CubeMesh) AddFace(p mgl32.Vec3, facing Facing, f FaceIndex) {
 		p[0]+o[5][0], p[1]+o[5][1], p[2]+o[5][2], br[0], br[1], 0, n[0], n[1], n[2], // Bottom right
 	)
 	m.count = int32(len(m.d))
+	m.vboCurrent = false
 }
 
 // Data returns the raw vertex array data for the mesh.
@@ -55,6 +52,7 @@ func (m *CubeMesh) Data() []float32 {
 // Reset rests the mesh builder state.
 func (m *CubeMesh) Reset() {
 	m.d = m.d[:0]
+	m.vboCurrent = false
 }
 
 // Upload refreshes the cube mesh on the GPU.
@@ -74,4 +72,22 @@ func (m *CubeMesh) Upload() {
 	gl.EnableVertexAttribArray(uint32(m.aTex))
 	offset += 3 * 4
 	gl.BindVertexArray(0)
+	m.vboCurrent = true
+}
+
+// draw draws the cube mesh.
+func (m *CubeMesh) draw(prg *Program, o *Orientation) {
+	if !m.glStarted {
+		m.aPos = prg.GetAttributeLocation("pos")
+		m.aTex = prg.GetAttributeLocation("texPos")
+		m.aNorm = prg.GetAttributeLocation("norm")
+		m.uWorld = prg.GetUniformLocation("world")
+		gl.GenVertexArrays(1, &m.vao)
+		gl.GenBuffers(1, &m.vbo)
+		m.glStarted = true
+	}
+	if !m.vboCurrent {
+		m.Upload()
+	}
+	m.Mesh.draw(o)
 }

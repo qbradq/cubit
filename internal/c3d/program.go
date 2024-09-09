@@ -99,14 +99,9 @@ func (p *Program) DrawMesh(m *Mesh, o *Orientation) {
 	m.draw(o)
 }
 
-// NewCubeMesh creates a new cube mesh ready for first use.
-func (p *Program) NewCubeMesh() *CubeMesh {
-	return newCubeMesh(p)
-}
-
 // DrawCubeMesh draws a cube mesh.
 func (p *Program) DrawCubeMesh(m *CubeMesh, o *Orientation) {
 	gl.Uniform1i(p.uDrawMode, drawModeAtlas)
 	p.atlas.bind(p.uAtlas)
-	m.draw(o)
+	m.draw(p, o)
 }

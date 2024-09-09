@@ -66,6 +66,8 @@ func loadModInfo(name string) error {
 // ReloadModInfo reloads all top-level info for all mods present.
 func ReloadModInfo() error {
 	Mods = map[string]*Mod{}
+	cubeDefsById = map[string]*Cube{}
+	cubeDefs = []*Cube{}
 	dirs, err := os.ReadDir("mods")
 	if err != nil {
 		return err
@@ -228,13 +230,19 @@ func (m *Mod) loadCubes() error {
 			return m.wrap("parsing cube file %s", err, path)
 		}
 		for k, cube := range cubes {
-			id := "/" + m.ID + "/" + k
-			if _, duplicate := CubeDefs[id]; duplicate {
-				return m.wrap("loading cube file %s",
-					errors.New("duplicate cube path "+id),
-					path)
+			cube.ID = "/" + m.ID + "/" + k
+			// Convert mod-relative face references to global
+			for i := range cube.Faces {
+				fi, found := m.faceMap[cube.Faces[i]]
+				if !found {
+					cube.Faces[i] = c3d.FaceIndexInvalid
+					continue
+				}
+				cube.Faces[i] = fi
 			}
-			CubeDefs[id] = cube
+			if err := registerCube(cube); err != nil {
+				return m.wrap("registering cube %s", err, cube.ID)
+			}
 		}
 		return nil
 	})

@@ -13,7 +13,7 @@ type Mesh struct {
 	uWorld int32  // World uniform ID
 }
 
-// newMesh creates a new mesh ready for use.
+// newMesh creates a new generic mesh.
 func newMesh(vertexes []float32, aPOS, aTEX, uWorld int32) *Mesh {
 	ret := &Mesh{
 		count:  int32(len(vertexes)),

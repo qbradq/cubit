@@ -1,15 +1,4 @@
 {
-    "air": {
-        "name": "air",
-        "faces": [
-            "0xFFFF",
-            "0xFFFF",
-            "0xFFFF",
-            "0xFFFF",
-            "0xFFFF",
-            "0xFFFF"
-        ]
-    },
     "grass": {
         "name": "grass",
         "faces": [

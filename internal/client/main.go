@@ -66,15 +66,26 @@ func Main() {
 	prg.Use()
 	input := cubit.NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
 	// Main loop
-	cubeMesh := prg.NewCubeMesh()
-	cubeMesh.AddFace(mgl32.Vec3{0, 0, 0}, c3d.North, 1)
-	cubeMesh.AddFace(mgl32.Vec3{0, 0, 0}, c3d.South, 1)
-	cubeMesh.AddFace(mgl32.Vec3{0, 0, 0}, c3d.East, 1)
-	cubeMesh.AddFace(mgl32.Vec3{0, 0, 0}, c3d.West, 1)
-	cubeMesh.AddFace(mgl32.Vec3{0, 0, 0}, c3d.Top, 1)
-	cubeMesh.AddFace(mgl32.Vec3{0, 0, 0}, c3d.Bottom, 1)
-	cubeMesh.Upload()
-	cmo := c3d.NewOrientation(mgl32.Vec3{0, 0, 0}, 0, 0, 0)
+	chunk := cubit.NewChunk()
+	cRef := cubit.CubeDefsIndex("/cubit/grass")
+	for iy := 0; iy < cubit.ChunkHeight; iy += 4 {
+		for iz := 0; iz < cubit.ChunkDepth; iz += 4 {
+			for ix := 0; ix < cubit.ChunkWidth; ix += 4 {
+				chunk.Set(ix, iy, iz, cRef, c3d.North)
+			}
+		}
+	}
+	for i := 0; i < cubit.ChunkWidth*cubit.ChunkHeight*cubit.ChunkDepth; i += 4 {
+		iy := i / (cubit.ChunkWidth * cubit.ChunkHeight)
+		iz := (i - iy*cubit.ChunkHeight) / cubit.ChunkWidth
+		if iz%4 != 0 || iy%4 != 0 {
+			continue
+		}
+		x := i & 0x000F
+		z := (i & 0x00F0) >> 4
+		y := (i & 0x7F00) >> 8
+		chunk.Set(x, y, z, cRef, c3d.North)
+	}
 	cam := c3d.NewCamera(mgl32.Vec3{0, 0, 3})
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
@@ -123,10 +134,7 @@ func Main() {
 		cMat := cam.TransformMatrix()
 		gl.UniformMatrix4fv(int32(prg.GetUniformLocation("camera")), 1, false, &cMat[0])
 		// Draw
-		cmo.Yaw(dt)
-		cmo.Pitch(dt * 0.5)
-		cmo.Roll(dt * 0.25)
-		prg.DrawCubeMesh(cubeMesh, cmo)
+		chunk.Draw(prg)
 		// Finish the frame
 		win.SwapBuffers()
 	}

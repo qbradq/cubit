@@ -16,6 +16,9 @@ type Orientation struct {
 	quat     mgl32.Quat // Rotation quaternion
 }
 
+// OrientationZero is a global convenience pointer to empty orientation.
+var OrientationZero *Orientation = &Orientation{}
+
 // NewOrientation creates a new orientation with the given rotations.
 func NewOrientation(position mgl32.Vec3, pitch, yaw, roll float32) *Orientation {
 	return &Orientation{
