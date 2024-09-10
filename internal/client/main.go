@@ -133,6 +133,8 @@ func Main() {
 		gl.UniformMatrix4fv(int32(prg.GetUniformLocation("project")), 1, false, &pMat[0])
 		cMat := cam.TransformMatrix()
 		gl.UniformMatrix4fv(int32(prg.GetUniformLocation("camera")), 1, false, &cMat[0])
+		gl.Uniform3f(prg.GetUniformLocation("cameraPos"),
+			cam.Position[0], cam.Position[1], cam.Position[2])
 		// Draw
 		chunk.Draw(prg)
 		// Finish the frame
@@ -145,7 +147,7 @@ func glInit() (*c3d.Program, error) {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-	gl.ClearColor(0.5, 0.5, 0.5, 0.0)
+	gl.ClearColor(0, 0.5, 1, 0.0)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.ClearDepthf(1)
 	gl.DepthFunc(gl.LEQUAL)
@@ -181,5 +183,7 @@ func glInit() (*c3d.Program, error) {
 		return nil, err
 	}
 	p.Use()
+	gl.Uniform3f(p.GetUniformLocation("lightPos"), 0, 0, 0)
+	gl.Uniform3f(p.GetUniformLocation("lightColor"), 1, 1, 1)
 	return p, nil
 }

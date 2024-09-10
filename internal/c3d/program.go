@@ -19,8 +19,8 @@ type Program struct {
 	fShader   *Shader    // Fragment shader
 	tex0      *Texture   // Texture bound to uniform tex0
 	atlas     *FaceAtlas // Atlas used to render textured cube mesh
-	aPOS      int32      // pos attribute location
-	aTEX      int32      // tex attribute location
+	aPos      int32      // pos attribute location
+	aTex      int32      // tex attribute location
 	uDrawMode int32      // drawMode uniform location
 	uWorld    int32      // world uniform location
 	uTexture  int32      // tex0 uniform location
@@ -43,8 +43,8 @@ func NewProgram(v, f *Shader, tex0 *Texture, atlas *FaceAtlas) (*Program, error)
 		gl.GetProgramInfoLog, "program:link"); err != nil {
 		return nil, err
 	}
-	ret.aPOS = ret.GetAttributeLocation("pos")
-	ret.aTEX = ret.GetAttributeLocation("texPos")
+	ret.aPos = ret.GetAttributeLocation("pos")
+	ret.aTex = ret.GetAttributeLocation("texPos")
 	ret.uDrawMode = ret.GetUniformLocation("drawMode")
 	ret.uWorld = ret.GetUniformLocation("world")
 	ret.uTexture = ret.GetUniformLocation("tex")
@@ -90,7 +90,7 @@ func (p *Program) GetUniformLocation(name string) int32 {
 
 // NewMesh creates a new mesh with the given data.
 func (p *Program) NewMesh(vertexes []float32) *Mesh {
-	return newMesh(vertexes, p.aPOS, p.aTEX, p.uWorld)
+	return newMesh(vertexes, p)
 }
 
 // DrawMesh draws a simple mesh.

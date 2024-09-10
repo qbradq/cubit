@@ -14,11 +14,13 @@ type Mesh struct {
 }
 
 // newMesh creates a new generic mesh.
-func newMesh(vertexes []float32, aPOS, aTEX, uWorld int32) *Mesh {
+func newMesh(vertexes []float32, prg *Program) *Mesh {
 	ret := &Mesh{
 		count:  int32(len(vertexes)),
-		uWorld: uWorld,
+		uWorld: prg.GetUniformLocation("world"),
 	}
+	aPos := prg.GetAttributeLocation("pos")
+	aTex := prg.GetAttributeLocation("texCoord")
 	gl.GenVertexArrays(1, &ret.vao)
 	gl.GenBuffers(1, &ret.vbo)
 	gl.BindVertexArray(ret.vao)
@@ -26,12 +28,12 @@ func newMesh(vertexes []float32, aPOS, aTEX, uWorld int32) *Mesh {
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertexes)*4, gl.Ptr(vertexes), gl.STATIC_DRAW)
 	var stride int32 = 3*4 + 3*4
 	var offset int = 0
-	gl.VertexAttribPointerWithOffset(uint32(aPOS), 3, gl.FLOAT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(aPOS))
+	gl.VertexAttribPointerWithOffset(uint32(aPos), 3, gl.FLOAT, false, stride, uintptr(offset))
+	gl.EnableVertexAttribArray(uint32(aPos))
 	offset += 3 * 4
-	gl.VertexAttribPointerWithOffset(uint32(aTEX), 3, gl.FLOAT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(aTEX))
-	offset += 2 * 4
+	gl.VertexAttribPointerWithOffset(uint32(aTex), 3, gl.FLOAT, false, stride, uintptr(offset))
+	gl.EnableVertexAttribArray(uint32(aTex))
+	offset += 3 * 4
 	gl.BindVertexArray(0)
 	return ret
 }

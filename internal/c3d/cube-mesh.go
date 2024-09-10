@@ -9,7 +9,6 @@ import (
 type CubeMesh struct {
 	Mesh
 	glStarted  bool      // If true, all OpenGL state changes required have happened
-	drawn      bool      // If true, the CubeMesh has been drawn at least once before.
 	vboCurrent bool      // If false, the VBO needs to be reuploaded.
 	d          []float32 // Raw mesh data
 	aPos       int32     // pos attribute location
@@ -20,7 +19,7 @@ type CubeMesh struct {
 // NewCubeMesh constructs a new CubeMesh object ready for use.
 func NewCubeMesh() *CubeMesh {
 	return &CubeMesh{
-		d: make([]float32, 0, 256*256),
+		d: make([]float32, 0, 54*16),
 	}
 }
 
@@ -32,7 +31,7 @@ func (m *CubeMesh) AddFace(p mgl32.Vec3, facing Facing, f FaceIndex) {
 	n := FaceNormals[facing]
 	o := cubeFacingOffsets[facing]
 	m.d = append(m.d,
-		// X        Y           Z     S  T  R  Normal
+		// X          Y             Z             S/R    T/G    B  Normal XYZ
 		p[0]+o[0][0], p[1]+o[0][1], p[2]+o[0][2], tl[0], tl[1], 0, n[0], n[1], n[2], // Top left
 		p[0]+o[1][0], p[1]+o[1][1], p[2]+o[1][2], br[0], tl[1], 0, n[0], n[1], n[2], // Top right
 		p[0]+o[2][0], p[1]+o[2][1], p[2]+o[2][2], tl[0], br[1], 0, n[0], n[1], n[2], // Bottom left
@@ -69,7 +68,7 @@ func (m *CubeMesh) Upload() {
 	gl.EnableVertexAttribArray(uint32(m.aTex))
 	offset += 3 * 4
 	gl.VertexAttribPointerWithOffset(uint32(m.aNorm), 3, gl.FLOAT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(m.aTex))
+	gl.EnableVertexAttribArray(uint32(m.aNorm))
 	offset += 3 * 4
 	gl.BindVertexArray(0)
 	m.vboCurrent = true
