@@ -11,20 +11,9 @@ import (
 	"github.com/qbradq/cubit/internal/cubit"
 )
 
-/*
-	mesh := prg.NewMesh([]float32{
-		-0.5, 0.5, 0.5, 0, 0, 0, // Top left
-		0.5, 0.5, 0.5, 1, 0, 0, // Top right
-		-0.5, -0.5, 0.5, 0, 1, 0, // Bottom left
-		-0.5, -0.5, 0.5, 0, 1, 0, // Bottom left
-		0.5, 0.5, 0.5, 1, 0, 0, // Top right
-		0.5, -0.5, 0.5, 1, 1, 0, // Bottom right
-	})
-*/
-
 // Configuration variables
 var mouseSensitivity float32 = 0.15
-var walkSpeed float32 = 2.5
+var walkSpeed float32 = 5
 
 // Super globals
 var debugTexture *c3d.Texture // Debugging texture
@@ -67,24 +56,41 @@ func Main() {
 	input := cubit.NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
 	// Main loop
 	chunk := cubit.NewChunk()
-	cRef := cubit.CubeDefsIndex("/cubit/grass")
-	for iy := 0; iy < cubit.ChunkHeight; iy += 4 {
-		for iz := 0; iz < cubit.ChunkDepth; iz += 4 {
-			for ix := 0; ix < cubit.ChunkWidth; ix += 4 {
-				chunk.Set(ix, iy, iz, cRef, c3d.North)
+	rGrass := cubit.CubeDefsIndex("/cubit/grass")
+	rDirt := cubit.CubeDefsIndex("/cubit/dirt")
+	// Flat
+	for iy := 0; iy < cubit.ChunkHeight; iy++ {
+		for iz := 0; iz < cubit.ChunkDepth; iz++ {
+			for ix := 0; ix < cubit.ChunkWidth; ix++ {
+				if iy < 11 {
+					chunk.Set(cubit.Pos(ix, iy, iz), rDirt, c3d.North)
+				} else if iy == 11 {
+					chunk.Set(cubit.Pos(ix, iy, iz), rGrass, c3d.North)
+				}
 			}
 		}
 	}
-	for i := 0; i < cubit.ChunkWidth*cubit.ChunkHeight*cubit.ChunkDepth; i += 4 {
-		iy := i / (cubit.ChunkWidth * cubit.ChunkHeight)
-		iz := (i - iy*cubit.ChunkHeight) / cubit.ChunkWidth
-		if iz%4 != 0 || iy%4 != 0 {
-			continue
+	// Dirt house
+	for ix := 13; ix <= 19; ix++ {
+		chunk.Set(cubit.Pos(ix, 12, 13), rDirt, c3d.North)
+		chunk.Set(cubit.Pos(ix, 13, 13), rDirt, c3d.North)
+		if ix == 17 {
+			chunk.Set(cubit.Pos(ix, 12, 17), rDirt, c3d.North)
+		} else if ix != 15 {
+			chunk.Set(cubit.Pos(ix, 12, 17), rDirt, c3d.North)
+			chunk.Set(cubit.Pos(ix, 13, 17), rDirt, c3d.North)
 		}
-		x := i & 0x000F
-		z := (i & 0x00F0) >> 4
-		y := (i & 0x7F00) >> 8
-		chunk.Set(x, y, z, cRef, c3d.North)
+	}
+	for iz := 14; iz <= 16; iz++ {
+		chunk.Set(cubit.Pos(13, 12, iz), rDirt, c3d.North)
+		chunk.Set(cubit.Pos(13, 13, iz), rDirt, c3d.North)
+		chunk.Set(cubit.Pos(19, 12, iz), rDirt, c3d.North)
+		chunk.Set(cubit.Pos(19, 13, iz), rDirt, c3d.North)
+	}
+	for iz := 13; iz <= 17; iz++ {
+		for ix := 13; ix <= 19; ix++ {
+			chunk.Set(cubit.Pos(ix, 14, iz), rDirt, c3d.North)
+		}
 	}
 	cam := c3d.NewCamera(mgl32.Vec3{0, 0, 3})
 	lastFrame := glfw.GetTime()
@@ -135,6 +141,8 @@ func Main() {
 		gl.UniformMatrix4fv(int32(prg.GetUniformLocation("camera")), 1, false, &cMat[0])
 		gl.Uniform3f(prg.GetUniformLocation("cameraPos"),
 			cam.Position[0], cam.Position[1], cam.Position[2])
+		gl.Uniform3f(prg.GetUniformLocation("lightPos"),
+			cam.Position[0], cam.Position[1], cam.Position[2])
 		// Draw
 		chunk.Draw(prg)
 		// Finish the frame
@@ -183,7 +191,6 @@ func glInit() (*c3d.Program, error) {
 		return nil, err
 	}
 	p.Use()
-	gl.Uniform3f(p.GetUniformLocation("lightPos"), 0, 0, 0)
 	gl.Uniform3f(p.GetUniformLocation("lightColor"), 1, 1, 1)
 	return p, nil
 }

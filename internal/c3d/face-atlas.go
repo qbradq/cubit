@@ -33,7 +33,7 @@ func (t *FaceIndex) UnmarshalJSON(b []byte) error {
 		if len(b) < 3 {
 			return nil
 		}
-		b = b[1 : len(b)-2]
+		b = b[1 : len(b)-1]
 	}
 	v, err := strconv.ParseInt(string(b), 0, 32)
 	if err != nil {
