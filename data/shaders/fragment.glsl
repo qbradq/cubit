@@ -21,8 +21,11 @@ void main(void) {
         color = texCoord;
     } else if (drawMode == 1) {
         color = vec3(texture2D(atlas, texCoord.xy).xyz);
-    } else {
+    } else if (drawMode == 2) {
         color = vec3(texture2D(tex, texCoord.xy).xyz);
+    } else {
+        gl_FragColor = vec4(texCoord, 1.0);
+        return;
     }
     // Ambient
     vec3 ambient = 0.1 * lightColor;

@@ -4,6 +4,7 @@ import (
 	"log"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -104,4 +105,9 @@ func (p *Program) DrawCubeMesh(m *CubeMesh, o *Orientation) {
 	gl.Uniform1i(p.uDrawMode, drawModeAtlas)
 	p.atlas.bind(p.uAtlas)
 	m.draw(p, o)
+}
+
+// NewAxisIndicator creates a new axis indicator at the given location.
+func (p *Program) NewAxisIndicator(pos mgl32.Vec3) *AxisIndicator {
+	return newAxisIndicator(pos, p)
 }

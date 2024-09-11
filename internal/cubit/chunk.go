@@ -5,24 +5,40 @@ import (
 	"github.com/qbradq/cubit/internal/c3d"
 )
 
-const ChunkWidth int = 32
-const ChunkHeight int = 32
-const ChunkDepth int = 32
+const ChunkWidth int = 16
+const ChunkHeight int = 16
+const ChunkDepth int = 16
 
-// Chunk represents a 16x16x16 cube of the world.
+var chunkDimensions = Position{
+	X: ChunkWidth,
+	Y: ChunkHeight,
+	Z: ChunkDepth,
+}
+
+// Chunk represents a 16x16x16 chunk of space.
 type Chunk struct {
-	c3d.Orientation
-	cubes      [ChunkWidth * ChunkHeight * ChunkDepth]CubeRef
-	mesh       *c3d.CubeMesh // Mesh object used to build the vbo data
-	cubesDirty bool          // When true, the cube array has changed since the last call to compile()
+	pos        Position        // Position representing the global location of the chunk
+	ref        ChunkRef        // Chunk self-reference
+	o          c3d.Orientation // Cached orientation value for the chunk
+	solid      CubeRef         // If cubes is nil, this is the CubeRef the chunk is filled with
+	cubes      []CubeRef       // All cube references in the chunk
+	mesh       *c3d.CubeMesh   // Mesh object used to build the vbo data
+	cubesDirty bool            // When true, the cube array has changed since the last call to compile()
 }
 
 // NewChunk creates a new Chunk ready for use.
-func NewChunk() *Chunk {
+func NewChunk(r ChunkRef) *Chunk {
 	ret := &Chunk{
-		Orientation: *c3d.NewOrientation(mgl32.Vec3{0, 0, 0}, 0, 0, 0),
-		cubesDirty:  true,
+		pos:        r.ToPosition(),
+		ref:        r,
+		solid:      CubeRefInvalid,
+		cubesDirty: true,
 	}
+	ret.o = *c3d.NewOrientation(mgl32.Vec3{
+		float32(ret.pos.X) + float32(ChunkWidth/2),
+		float32(ret.pos.Y) + float32(ChunkHeight/2),
+		float32(ret.pos.Z) + float32(ChunkDepth/2),
+	}, 0, 0, 0)
 	for i := range ret.cubes {
 		ret.cubes[i] = CubeRefInvalid
 	}
@@ -36,10 +52,34 @@ func (c *Chunk) Set(p Position, r CubeRef, f c3d.Facing) {
 		p.Z < 0 || p.Z >= ChunkDepth {
 		return
 	}
+	crp := cubeRefPacked(r, f)
+	if len(c.cubes) == 0 {
+		if crp == c.solid {
+			return
+		}
+		c.cubes = make([]CubeRef, ChunkWidth*ChunkHeight*ChunkDepth)
+		for i := range c.cubes {
+			c.cubes[i] = c.solid
+		}
+	}
 	ofs := p.Y * ChunkWidth * ChunkDepth
 	ofs += p.Z * ChunkDepth
 	ofs += p.X
-	c.cubes[ofs] = cubeRefPacked(r, f)
+	if c.cubes[ofs] == crp {
+		return
+	}
+	c.cubes[ofs] = crp
+	c.cubesDirty = true
+}
+
+// Fill fills the entire chunk with the given cube reference.
+func (c *Chunk) Fill(r CubeRef, f c3d.Facing) {
+	crp := cubeRefPacked(r, f)
+	if len(c.cubes) == 0 && c.solid == crp {
+		return
+	}
+	c.solid = crp
+	c.cubes = nil
 	c.cubesDirty = true
 }
 
@@ -49,6 +89,9 @@ func (c *Chunk) CubeRefAt(p Position) CubeRef {
 		p.Y < 0 || p.Y >= ChunkHeight ||
 		p.Z < 0 || p.Z >= ChunkDepth {
 		return CubeRefInvalid
+	}
+	if len(c.cubes) == 0 {
+		return c.solid
 	}
 	ofs := p.Y * ChunkWidth * ChunkDepth
 	ofs += p.Z * ChunkDepth
@@ -90,9 +133,9 @@ func (c *Chunk) compile() {
 					continue
 				}
 				center = mgl32.Vec3{
-					float32(p.X-ChunkWidth/2) - 0.5,
-					float32(p.Y-ChunkHeight/2) + 0.5,
-					float32(p.Z-ChunkDepth/2) + 0.5,
+					float32(p.X) + 0.5,
+					float32(p.Y) + 0.5,
+					float32(p.Z) + 0.5,
 				}
 				cube = cubeDefs[cr]
 				face(c3d.North)
@@ -112,5 +155,5 @@ func (c *Chunk) Draw(prg *c3d.Program) {
 		c.compile()
 		c.cubesDirty = false
 	}
-	prg.DrawCubeMesh(c.mesh, &c.Orientation)
+	prg.DrawCubeMesh(c.mesh, c3d.OrientationZero)
 }

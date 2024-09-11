@@ -20,7 +20,7 @@ func newMesh(vertexes []float32, prg *Program) *Mesh {
 		uWorld: prg.GetUniformLocation("world"),
 	}
 	aPos := prg.GetAttributeLocation("pos")
-	aTex := prg.GetAttributeLocation("texCoord")
+	aTex := prg.GetAttributeLocation("texPos")
 	gl.GenVertexArrays(1, &ret.vao)
 	gl.GenBuffers(1, &ret.vbo)
 	gl.BindVertexArray(ret.vao)

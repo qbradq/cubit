@@ -56,6 +56,11 @@ func (m *CubeMesh) Reset() {
 
 // Upload refreshes the cube mesh on the GPU.
 func (m *CubeMesh) Upload() {
+	// Prevent panic in unsafe code
+	if len(m.d) == 0 {
+		m.vboCurrent = true
+		return
+	}
 	gl.BindVertexArray(m.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(m.d)*4, gl.Ptr(m.d), gl.STATIC_DRAW)

@@ -32,3 +32,39 @@ func (p Position) Add(r Position) Position {
 		Z: p.Z + r.Z,
 	}
 }
+
+// Sub subtracts r from this position and returns the result.
+func (p Position) Sub(r Position) Position {
+	return Position{
+		X: p.X - r.X,
+		Y: p.Y - r.Y,
+		Z: p.Z + r.Z,
+	}
+}
+
+// Mul multiplies r and this position and returns the result.
+func (p Position) Mul(r Position) Position {
+	return Position{
+		X: p.X * r.X,
+		Y: p.Y * r.Y,
+		Z: p.Z * r.Z,
+	}
+}
+
+// Div divides this position by r and returns the result.
+func (p Position) Div(r Position) Position {
+	return Position{
+		X: p.X / r.X,
+		Y: p.Y / r.Y,
+		Z: p.Z / r.Z,
+	}
+}
+
+// Mod returns the result of this position modulo r.
+func (p Position) Mod(r Position) Position {
+	return Position{
+		X: p.X % r.X,
+		Y: p.Y % r.Y,
+		Z: p.Z % r.Z,
+	}
+}
