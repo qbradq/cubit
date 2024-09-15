@@ -33,6 +33,15 @@ var FaceNormals = [6]mgl32.Vec3{
 	{0, -1, 0},
 }
 
+var FacingOffsets = [6][3]int{
+	{0, 0, -1},
+	{0, 0, 1},
+	{1, 0, 0},
+	{-1, 0, 0},
+	{0, 1, 0},
+	{0, -1, 0},
+}
+
 type getObjIv func(uint32, uint32, *int32)
 type getObjInfoLog func(uint32, int32, *int32, *uint8)
 

@@ -16,5 +16,5 @@ void main(void) {
 	gl_Position = project * camera * world * vec4(pos, 1.0);
 	texCoord = texPos;
 	fragPos = vec3(world * vec4(pos, 1.0));
-	normal = norm;
+	normal = vec3(world * vec4(norm, 1.0));
 }

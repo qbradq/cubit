@@ -19,6 +19,16 @@ type Orientation struct {
 // OrientationZero is a global convenience pointer to empty orientation.
 var OrientationZero *Orientation = &Orientation{}
 
+// FacingToOrientation is the facing to orientation table.
+var FacingToOrientation = [6]*Orientation{
+	NewOrientation(mgl32.Vec3{0, 0, 0}, 0, 0, 0),
+	NewOrientation(mgl32.Vec3{0, 0, 0}, 0, math.Pi, 0),
+	NewOrientation(mgl32.Vec3{0, 0, 0}, 0, -math.Pi*0.5, 0),
+	NewOrientation(mgl32.Vec3{0, 0, 0}, 0, math.Pi*0.5, 0),
+	NewOrientation(mgl32.Vec3{0, 0, 0}, math.Pi*0.5, 0, 0),
+	NewOrientation(mgl32.Vec3{0, 0, 0}, -math.Pi*0.5, 0, 0),
+}
+
 // NewOrientation creates a new orientation with the given rotations.
 func NewOrientation(position mgl32.Vec3, pitch, yaw, roll float32) *Orientation {
 	return &Orientation{
@@ -29,6 +39,15 @@ func NewOrientation(position mgl32.Vec3, pitch, yaw, roll float32) *Orientation 
 		quat:     mgl32.QuatIdent(),
 	}
 }
+
+// GetPitch returns the current pitch angle.
+func (o *Orientation) GetPitch() float32 { return o.pitch }
+
+// GetYaw returns the current yaw angle.
+func (o *Orientation) GetYaw() float32 { return o.yaw }
+
+// GetRoll returns the current roll angle.
+func (o *Orientation) GetRoll() float32 { return o.roll }
 
 // Pitch rotations the orientation about the X axis by r radians.
 func (o *Orientation) Pitch(r float32) {
@@ -48,4 +67,14 @@ func (o *Orientation) Roll(r float32) {
 // RotationMatrix returns the rotation matrix for this orientation.
 func (o *Orientation) RotationMatrix() mgl32.Mat4 {
 	return mgl32.AnglesToQuat(o.pitch, o.yaw, o.roll, mgl32.XYZ).Mat4()
+}
+
+// TranslationMatrix returns the translation matrix for this orientation.
+func (o *Orientation) TranslationMatrix() mgl32.Mat4 {
+	return mgl32.Translate3D(o.Position[0], o.Position[1], o.Position[2])
+}
+
+// TransformMatrix returns the full transform matrix for this orientation.
+func (o *Orientation) TransformMatrix() mgl32.Mat4 {
+	return o.TranslationMatrix().Mul4(o.RotationMatrix())
 }

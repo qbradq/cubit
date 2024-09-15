@@ -20,9 +20,9 @@ void main(void) {
     if (drawMode == 0) {
         color = texCoord;
     } else if (drawMode == 1) {
-        color = vec3(texture2D(atlas, texCoord.xy).xyz);
+        color = texture2D(atlas, texCoord.xy).xyz;
     } else if (drawMode == 2) {
-        color = vec3(texture2D(tex, texCoord.xy).xyz);
+        color = texture2D(tex, texCoord.xy).xyz;
     } else {
         gl_FragColor = vec4(texCoord, 1.0);
         return;
@@ -40,6 +40,6 @@ void main(void) {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 2.0);
     vec3 specular = 0.5 * spec * lightColor;
     // Color mixing
-    vec3 result = (ambient + diffuse + specular) * color;
+    vec3 result = (ambient + diffuse + specular) * vec3(color.xyz);
     gl_FragColor = vec4(result, 1.0);
 }

@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/util"
 )
 
 // mustRead is a utility function for handling file reading from fs.FS
@@ -68,6 +69,7 @@ func ReloadModInfo() error {
 	Mods = map[string]*Mod{}
 	cubeDefsById = map[string]*Cube{}
 	cubeDefs = []*Cube{}
+	voxIndex = map[string]*Vox{}
 	dirs, err := os.ReadDir("mods")
 	if err != nil {
 		return err
@@ -107,6 +109,9 @@ func LoadMods(mods ...string) error {
 		return err
 	}
 	if err := stage(func(m *Mod) error { return m.loadCubes() }); err != nil {
+		return err
+	}
+	if err := stage(func(m *Mod) error { return m.loadVox() }); err != nil {
 		return err
 	}
 	return nil
@@ -181,12 +186,12 @@ func (m *Mod) loadFacePage(n uint8, r io.Reader) error {
 		return m.wrap("decoding face",
 			errors.New("face page images must be 256x256 pixels in size"))
 	}
-	face := image.NewRGBA(image.Rect(0, 0, 32, 32))
+	face := image.NewRGBA(image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims))
 	for fy := 0; fy < 8; fy++ {
 		for fx := 0; fx < 8; fx++ {
 			draw.Draw(
-				face, image.Rect(0, 0, 32, 32),
-				img, image.Pt(fx*32, fy*32),
+				face, image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims),
+				img, image.Pt(fx*c3d.FaceDims, fy*c3d.FaceDims),
 				draw.Src)
 			if isEmpty(face) {
 				continue
@@ -243,6 +248,42 @@ func (m *Mod) loadCubes() error {
 			if err := registerCube(cube); err != nil {
 				return m.wrap("registering cube %s", err, cube.ID)
 			}
+		}
+		return nil
+	})
+}
+
+// loadVox loads all .vox models from the mod.
+func (m *Mod) loadVox() error {
+	return fs.WalkDir(m.f, "vox", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return m.wrap("walking vox directory, path=%s", err, path)
+		}
+		if len(path) < 1 {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		ext = strings.ToLower(ext)
+		ns := filepath.Base(path)
+		ns = ns[:len(ns)-len(ext)]
+		if ext != ".vox" {
+			return nil
+		}
+		modPath := "/" + m.ID + "/" + ns
+		f, err := m.f.Open(path)
+		if err != nil {
+			return m.wrap("opening vox file %s", err, path)
+		}
+		if voxFile, err := util.NewVoxFromReader(f); err != nil {
+			return m.wrap("processing vox file %s", err, path)
+		} else {
+			RegisterVox(modPath, NewVox(voxFile))
 		}
 		return nil
 	})

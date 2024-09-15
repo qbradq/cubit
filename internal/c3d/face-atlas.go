@@ -1,6 +1,7 @@
 package c3d
 
 import (
+	"fmt"
 	"image"
 	"image/draw"
 	"strconv"
@@ -9,16 +10,23 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-// Stepping value for face S offset.
-const pageSStep float32 = float32(1) / float32(64)
+// atlasTextureDims are the X and Y dimensions of the face atlas texture in
+// pixels.
+const atlasTextureDims = 2048
 
-// Stepping value for face T offset.
-const pageTStep float32 = float32(1) / float32(64)
+// FaceDims are the X and Y dimensions of a face in pixels.
+const FaceDims = 16
 
-// FaceIndex indexes a tile in the face atlas. The 10 most significant bits
-// encode the atlas page containing the tile. The next 3 most significant bits
-// encode the Y position on the texture atlas in tiles. The file 3 least
-// significant bits encode the X position on the texture atlas in tiles.
+// atlasDims are the X and Y dimensions of the face atlas in faces.
+const atlasDims = atlasTextureDims / FaceDims
+
+// Stepping value for face S and T offsets.
+const pageStep float32 = float32(1) / float32(atlasDims)
+
+// FaceIndex indexes a tile in the face atlas. The 4 least significant bits
+// encode the X face position with the source page image, and the next 4 bits
+// encode the Y. The 8 most significant bits of the index encode the source
+// face page.
 type FaceIndex uint16
 
 // FaceIndexInvalid is the invalid face index value.
@@ -45,16 +53,16 @@ func (t *FaceIndex) UnmarshalJSON(b []byte) error {
 
 // ToXY returns the X, Y, and Z coordinates of the tile in tile source sets.
 func (t FaceIndex) ToXYZ() (x int, y int, z int) {
-	x = int(t >> 6)
-	y = int((t >> 3) & 0x7)
-	z = int(t & 0x07)
+	x = int(t & 0x000F)
+	y = int(t&0x00F0) >> 4
+	z = int(t&0xFF00) >> 8
 	return
 }
 
 // ToXY returns the X and Y coordinates of the tile in atlas texture.
 func (t FaceIndex) ToAtlasXY() (x int, y int) {
-	x = int(t % 64)
-	y = int(t / 64)
+	x = int(t) % atlasDims
+	y = int(t) / atlasDims
 	return
 }
 
@@ -63,13 +71,13 @@ func (t FaceIndex) ToAtlasXY() (x int, y int) {
 func (t FaceIndex) ToST() (mgl32.Vec3, mgl32.Vec3) {
 	x, y := t.ToAtlasXY()
 	return mgl32.Vec3{
-			float32(x) * pageSStep,
-			float32(y) * pageTStep,
+			float32(x) * pageStep,
+			float32(y) * pageStep,
 			0,
 		},
 		mgl32.Vec3{
-			float32(x+1) * pageSStep,
-			float32(y+1) * pageTStep,
+			float32(x+1) * pageStep,
+			float32(y+1) * pageStep,
 			0,
 		}
 }
@@ -77,10 +85,10 @@ func (t FaceIndex) ToST() (mgl32.Vec3, mgl32.Vec3) {
 // FaceIndexFromXYZ returns the FaceIndex value for the given coordinates, where
 // X and Y range 0-7 and Z ranges 0-255.
 func FaceIndexFromXYZ(x, y, z int) FaceIndex {
-	if x < 0 || x > 7 || y < 0 || y > 7 || z < 0 || z > 255 {
+	if x < 0 || x > 15 || y < 0 || y > 15 || z < 0 || z > 255 {
 		return FaceIndexInvalid
 	}
-	return FaceIndex((x) | (y << 3) | (z << 6))
+	return FaceIndex((x) | (y << 4) | (z << 8))
 }
 
 // FaceAtlas manages
@@ -93,7 +101,8 @@ type FaceAtlas struct {
 // NewFaceAtlas creates a new FaceAtlas object ready for use.
 func NewFaceAtlas() *FaceAtlas {
 	ret := &FaceAtlas{
-		img: image.NewRGBA(image.Rect(0, 0, 2048, 2048)),
+		img: image.NewRGBA(image.Rect(0, 0, atlasTextureDims,
+			atlasTextureDims)),
 	}
 	for i := range ret.img.Pix {
 		ret.img.Pix[i] = 0xFF
@@ -109,13 +118,14 @@ func (a *FaceAtlas) freeMemory() {
 
 // AddFace adds a single face graphic to the atlas and returns the FaceIndex.
 func (a *FaceAtlas) AddFace(img *image.RGBA) FaceIndex {
-	if img.Bounds().Max.X != 32 || img.Bounds().Max.Y != 32 {
-		panic("all face images must be 32x32 pixels")
+	if img.Bounds().Max.X != FaceDims || img.Bounds().Max.Y != FaceDims {
+		panic(fmt.Errorf("all face images must be %dx%d pixels", FaceDims,
+			FaceDims))
 	}
 	x, y := a.nextIndex.ToAtlasXY()
 	draw.Draw(
 		a.img,
-		image.Rect(x*32, y*32, (x+1)*32, (y+1)*32),
+		image.Rect(x*FaceDims, y*FaceDims, (x+1)*FaceDims, (y+1)*FaceDims),
 		img,
 		image.Pt(0, 0),
 		draw.Src,
@@ -135,7 +145,7 @@ func (a *FaceAtlas) upload() {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
-		2048, 2048, 0,
+		atlasTextureDims, atlasTextureDims, 0,
 		gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(a.img.Pix))
 }
 

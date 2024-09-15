@@ -50,14 +50,15 @@ func (w *World) GetChunkByRef(r ChunkRef) *Chunk {
 func (w *World) generateChunk(r ChunkRef) *Chunk {
 	ret := NewChunk(r)
 	p := r.ToPosition()
+	n := c3d.North
 	// For now we just hard-code the chunk generation.
 	rDirt := CubeDefsIndex("/cubit/dirt")
 	rGrass := CubeDefsIndex("/cubit/grass")
 	if p.Y < 0 {
-		ret.Fill(rDirt, c3d.North)
+		ret.Fill(CellForCube(rDirt, n))
 	}
 	if p.Y > 0 {
-		ret.Fill(CubeRefInvalid, c3d.North)
+		ret.Fill(CellInvalid)
 	}
 	if p.Y == 0 {
 		// Flat
@@ -65,9 +66,9 @@ func (w *World) generateChunk(r ChunkRef) *Chunk {
 			for iz := 0; iz < ChunkDepth; iz++ {
 				for ix := 0; ix < ChunkWidth; ix++ {
 					if iy < 11 {
-						ret.Set(Pos(ix, iy, iz), rDirt, c3d.North)
+						ret.Set(Pos(ix, iy, iz), CellForCube(rDirt, n))
 					} else if iy == 11 {
-						ret.Set(Pos(ix, iy, iz), rGrass, c3d.North)
+						ret.Set(Pos(ix, iy, iz), CellForCube(rGrass, n))
 					}
 				}
 			}
@@ -75,24 +76,25 @@ func (w *World) generateChunk(r ChunkRef) *Chunk {
 		// Dirt house at origin
 		if p.X == 0 && p.Z == 0 {
 			for ix := 5; ix <= 11; ix++ {
-				ret.Set(Pos(ix, 12, 9), rDirt, c3d.North)
-				ret.Set(Pos(ix, 13, 9), rDirt, c3d.North)
+				ret.Set(Pos(ix, 12, 9), CellForCube(rDirt, c3d.North))
+				ret.Set(Pos(ix, 13, 9), CellForCube(rDirt, c3d.North))
 				if ix == 9 {
-					ret.Set(Pos(ix, 12, 5), rDirt, c3d.North)
+					ret.Set(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
+					ret.Set(Pos(ix, 13, 5), CellForVox(GetVoxByPath("/cubit/window0").Ref, c3d.North))
 				} else if ix != 7 {
-					ret.Set(Pos(ix, 12, 5), rDirt, c3d.North)
-					ret.Set(Pos(ix, 13, 5), rDirt, c3d.North)
+					ret.Set(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
+					ret.Set(Pos(ix, 13, 5), CellForCube(rDirt, c3d.North))
 				}
 			}
 			for iz := 6; iz <= 8; iz++ {
-				ret.Set(Pos(5, 12, iz), rDirt, c3d.North)
-				ret.Set(Pos(5, 13, iz), rDirt, c3d.North)
-				ret.Set(Pos(11, 12, iz), rDirt, c3d.North)
-				ret.Set(Pos(11, 13, iz), rDirt, c3d.North)
+				ret.Set(Pos(5, 12, iz), CellForCube(rDirt, c3d.North))
+				ret.Set(Pos(5, 13, iz), CellForCube(rDirt, c3d.North))
+				ret.Set(Pos(11, 12, iz), CellForCube(rDirt, c3d.North))
+				ret.Set(Pos(11, 13, iz), CellForCube(rDirt, c3d.North))
 			}
 			for iz := 5; iz <= 9; iz++ {
 				for ix := 5; ix <= 11; ix++ {
-					ret.Set(Pos(ix, 14, iz), rDirt, c3d.North)
+					ret.Set(Pos(ix, 14, iz), CellForCube(rDirt, c3d.North))
 				}
 			}
 		}
@@ -100,8 +102,8 @@ func (w *World) generateChunk(r ChunkRef) *Chunk {
 	return ret
 }
 
-// SetCube sets the cube and facing at the given position in the world.
-func (w *World) SetCube(p Position, r CubeRef, f c3d.Facing) {
+// SetCell sets the cube and facing at the given position in the world.
+func (w *World) SetCell(p Position, c Cell, f c3d.Facing) {
 	w.GetChunkByRef(ChunkRefFromCoords(p.Div(chunkDimensions))).Set(
-		p.Mod(chunkDimensions), r, f)
+		p.Mod(chunkDimensions), c)
 }

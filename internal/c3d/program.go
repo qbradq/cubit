@@ -89,21 +89,8 @@ func (p *Program) GetUniformLocation(name string) int32 {
 	return id
 }
 
-// NewMesh creates a new mesh with the given data.
-func (p *Program) NewMesh(vertexes []float32) *Mesh {
-	return newMesh(vertexes, p)
-}
-
-// DrawMesh draws a simple mesh.
-func (p *Program) DrawMesh(m *Mesh, o *Orientation) {
-	gl.Uniform1i(p.uDrawMode, drawModeTexture)
-	m.draw(o)
-}
-
 // DrawCubeMesh draws a cube mesh.
 func (p *Program) DrawCubeMesh(m *CubeMesh, o *Orientation) {
-	gl.Uniform1i(p.uDrawMode, drawModeAtlas)
-	p.atlas.bind(p.uAtlas)
 	m.draw(p, o)
 }
 

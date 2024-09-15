@@ -57,9 +57,7 @@ func Main() {
 	// Main loop
 	world := cubit.NewWorld()
 	chunk := world.GetChunkByRef(cubit.ChunkRefFromCoords(cubit.Pos(0, 0, 0)))
-	axis := prg.NewAxisIndicator(mgl32.Vec3{0, 0, 0})
-	// cam := c3d.NewCamera(mgl32.Vec3{8, 16, 8})
-	cam := c3d.NewCamera(mgl32.Vec3{0, 0, 0})
+	cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state
@@ -111,7 +109,6 @@ func Main() {
 		gl.Uniform3f(prg.GetUniformLocation("lightPos"),
 			cam.Position[0], cam.Position[1], cam.Position[2])
 		// Draw
-		axis.Draw()
 		chunk.Draw(prg)
 		// Finish the frame
 		win.SwapBuffers()

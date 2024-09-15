@@ -10,25 +10,11 @@ import (
 var Faces *c3d.FaceAtlas = c3d.NewFaceAtlas()
 
 // CubeRef is a reference to a single Cube object that holds all of the static
-// data for the cube. The facing of cubes are packed into the three most
-// significant bits within chunks.
+// data for the cube.
 type CubeRef uint16
 
 // CubeRefInvalid is the invalid value for CubeRef types.
-const CubeRefInvalid CubeRef = 0b0000111111111111
-
-// cubeRefPacked returns the packed representation of the cube reference and the
-// facing.
-func cubeRefPacked(r CubeRef, f c3d.Facing) CubeRef {
-	return (r & 0b0000111111111111) | ((CubeRef(f) & 0b111) << 13)
-}
-
-// unpack unpacks the cube reference into the cube index and facing.
-func (r CubeRef) unpack() (ref CubeRef, f c3d.Facing) {
-	ref = r & 0b0000111111111111
-	f = c3d.Facing(r >> 13)
-	return
-}
+const CubeRefInvalid CubeRef = 0xFFFF
 
 // CubeDefsIndex returns the CubeRef assigned to the given id.
 func CubeDefsIndex(id string) CubeRef {
@@ -69,15 +55,11 @@ func registerCube(c *Cube) error {
 	if _, duplicate := cubeDefsById[c.ID]; duplicate {
 		return fmt.Errorf("duplicate cube id %s", c.ID)
 	}
-	c.Ref = nextCubeRef
-	nextCubeRef++
+	c.Ref = CubeRef(len(cubeDefs))
 	cubeDefsById[c.ID] = c
 	cubeDefs = append(cubeDefs, c)
 	return nil
 }
-
-// nextCubeRef holds the next value to be assigned registered cubes.
-var nextCubeRef CubeRef
 
 // cubeDefs holds all of the cube definitions loaded from mods by ID.
 var cubeDefsById = map[string]*Cube{}
