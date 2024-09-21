@@ -90,5 +90,4 @@ func (m *VoxelMesh) draw(p *program) {
 	}
 	gl.BindVertexArray(m.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
-	gl.BindVertexArray(0)
 }

@@ -62,6 +62,7 @@ func Main() {
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state
+		input.resetKeysPushed()
 		glfw.PollEvents()
 		input.PollEvents()
 		currentFrame := glfw.GetTime()
@@ -96,6 +97,9 @@ func Main() {
 		if input.IsPressed("cancel") {
 			win.SetShouldClose(true)
 		}
+		if input.WasPressed("console") {
+
+		}
 		cam.Yaw += input.CursorDelta[0] * mouseSensitivity
 		cam.Pitch += input.CursorDelta[1] * mouseSensitivity
 		if cam.Pitch > 89 {
@@ -118,6 +122,9 @@ func glInit() (*c3d.App, error) {
 	}
 	gl.ClearColor(0, 0.5, 1, 0.0)
 	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.BlendEquation(gl.FUNC_ADD)
 	gl.ClearDepthf(1)
 	gl.DepthFunc(gl.LEQUAL)
 	gl.Enable(gl.CULL_FACE)

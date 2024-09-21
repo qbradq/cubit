@@ -26,9 +26,12 @@ type App struct {
 	voxelMeshes []voxelMeshRef // List of voxel meshes to draw along with orientation
 	axis        *AxisIndicator // Debug axis indicator
 	pRGBFB      *program       // RGB with no lighting
-	pRGB        *program       // RGB rendering program
-	pCubeMesh   *program       // Face atlas texturing program
+	pRGB        *program       // RGB
+	pCubeMesh   *program       // Face atlas texturing
+	pText       *program       // Text rendering
 	atlas       *FaceAtlas     // Face atlas to use for cube mesh rendering
+	fm          *fontManager   // Font manager for the application
+	textDebug   *Text          // TODO REMOVE DEBUG
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -37,22 +40,32 @@ func NewApp(atlas *FaceAtlas) (*App, error) {
 	ret := &App{
 		atlas: atlas,
 	}
+	// rgb_fullbright.glsl
 	ret.pRGBFB, err = loadProgram("rgb_fullbright")
 	if err != nil {
 		return nil, err
 	}
+	ret.axis = newAxisIndicator(mgl32.Vec3{0, 0, 0}, ret.pRGBFB)
+	// rgb.glsl
 	ret.pRGB, err = loadProgram("rgb")
 	if err != nil {
 		return nil, err
 	}
+	// cube_mesh.glsl
 	ret.pCubeMesh, err = loadProgram("cube_mesh")
 	if err != nil {
 		return nil, err
 	}
-	ret.pCubeMesh.use()
-	ret.atlas.upload()
+	ret.atlas.upload(ret.pCubeMesh)
 	ret.atlas.freeMemory()
-	ret.axis = newAxisIndicator(mgl32.Vec3{0, 0, 0}, ret.pRGBFB)
+	// text.glsl
+	ret.pText, err = loadProgram("text")
+	if err != nil {
+		return nil, err
+	}
+	ret.fm = newFontManager(ret.pText)
+	// TODO REMOVE DEBUG
+	ret.textDebug = newText(ret.fm, ret.pText)
 	return ret, nil
 }
 
@@ -61,7 +74,7 @@ func (a *App) Delete() {
 	a.pRGB.delete()
 	a.pRGBFB.delete()
 	a.pCubeMesh.delete()
-	a.atlas.unbind()
+	a.pText.delete()
 }
 
 // AddVoxelMesh adds the voxel mesh to the list to render. The value of o is
@@ -90,7 +103,7 @@ func (a *App) Draw(c *Camera) {
 	mt := c.TransformMatrix().Mul4(a.axis.o.TransformMatrix())
 	gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false, &mt[0])
 	a.axis.draw()
-	// TODO Draw chunks
+	// Draw chunks
 	a.pCubeMesh.use()
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
@@ -115,7 +128,14 @@ func (a *App) Draw(c *Camera) {
 		v.m.draw(a.pRGB)
 	}
 	// TODO Draw UI
+	a.pText.use()
+	if a.fm.imgDirty {
+		a.fm.updateAtlasTexture()
+	}
 	pMat = mgl32.Ortho2D(0, float32(VirtualScreenWidth), 0,
 		float32(VirtualScreenHeight))
-	gl.UniformMatrix4fv(a.pRGB.uni("uProjectionMatrix"), 1, false, &pMat[0])
+	gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false, &pMat[0])
+	a.fm.bind(a.pText)
+	// TODO REMOVE DEBUG
+	a.textDebug.draw()
 }

@@ -133,7 +133,8 @@ func (a *FaceAtlas) AddFace(img *image.RGBA) FaceIndex {
 }
 
 // upload uploads the entire face atlas to the GPU as a 2D texture array.
-func (a *FaceAtlas) upload() {
+func (a *FaceAtlas) upload(prg *program) {
+	prg.use()
 	gl.GenTextures(1, &a.textureID)
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, a.textureID)
@@ -151,10 +152,4 @@ func (a *FaceAtlas) bind(prg *program) {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, a.textureID)
 	gl.Uniform1i(prg.uni("uAtlas"), 0)
-}
-
-// unbind un-binds the texture from the 3D texture unit.
-func (a *FaceAtlas) unbind() {
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
