@@ -28,5 +28,5 @@ go.work.sum
 /tools
 
 # Output files
-cubit
-
+/cubit
+/font.png

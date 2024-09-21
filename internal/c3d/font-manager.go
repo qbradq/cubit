@@ -3,7 +3,9 @@ package c3d
 import (
 	"image"
 	"image/draw"
+	"image/png"
 	"log"
+	"os"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/golang/freetype/truetype"
@@ -13,9 +15,9 @@ import (
 )
 
 const faDims int = 2048
-const faGlyphSize int = 48
+const faGlyphSize int = 32
 const faGlyphDims int = 64
-const faGlyphOfs int = faGlyphDims - faGlyphSize
+const faGlyphOfs int = (faGlyphDims - faGlyphSize) / 2
 const faGlyphsWide int = faDims / faGlyphDims
 const faAtlasStep float32 = float32(faGlyphDims) / float32(faDims)
 
@@ -69,6 +71,17 @@ func newFontManager(prg *program) *fontManager {
 	for i := 32; i < 128; i++ {
 		ret.cacheGlyph(rune(i))
 	}
+	// TODO REMOVE DEBUG
+	f, err := os.Create("font.png")
+	if err != nil {
+		panic(err)
+	}
+	err = png.Encode(f, ret.img)
+	if err != nil {
+		f.Close()
+		panic(err)
+	}
+	f.Close()
 	// GL setup
 	prg.use()
 	gl.GenTextures(1, &ret.t)

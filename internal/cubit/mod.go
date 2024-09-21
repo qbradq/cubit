@@ -70,6 +70,8 @@ func ReloadModInfo() error {
 	cubeDefsById = map[string]*Cube{}
 	cubeDefs = []*Cube{}
 	voxIndex = map[string]*Vox{}
+	Faces = c3d.NewFaceAtlas()
+	UITiles = c3d.NewFaceAtlas()
 	dirs, err := os.ReadDir("mods")
 	if err != nil {
 		return err
@@ -104,6 +106,9 @@ func LoadMods(mods ...string) error {
 			}
 		}
 		return nil
+	}
+	if err := stage(func(m *Mod) error { return m.loadUITiles() }); err != nil {
+		return err
 	}
 	if err := stage(func(m *Mod) error { return m.loadFaces() }); err != nil {
 		return err
@@ -287,4 +292,81 @@ func (m *Mod) loadVox() error {
 		}
 		return nil
 	})
+}
+
+// loadUITiles loads all ui tiles for the mod.
+func (m *Mod) loadUITiles() error {
+	return fs.WalkDir(m.f, "ui", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return m.wrap("walking ui directory, path=%s", err, path)
+		}
+		if len(path) < 1 {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ns := strings.ToLower(path)
+		ns = filepath.Base(ns)
+		ext := filepath.Ext(ns)
+		ns = ns[:len(ns)-len(ext)]
+		if ext != ".png" {
+			return nil
+		}
+		v, err := strconv.ParseInt(ns, 0, 32)
+		if err != nil {
+			return m.wrap("parsing ui index string %s", err, ns)
+		}
+		if v > 0xFF {
+			return m.wrap("parsing ui index",
+				errors.New("ui pages may range 0-255"))
+		}
+		f, err := m.f.Open(path)
+		if err != nil {
+			return m.wrap("reading ui file", err)
+		}
+		if err := m.loadUIPage(uint8(v), f); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+// loadUIPage loads the image as a face page, adding all non-empty (all
+// transparent) tiles into UITiles.
+func (m *Mod) loadUIPage(n uint8, r io.Reader) error {
+	isEmpty := func(sub *image.RGBA) bool {
+		for i := 0; i < len(sub.Pix); i += 4 {
+			if sub.Pix[i+3] != 0 {
+				return false
+			}
+		}
+		return true
+	}
+	img, err := png.Decode(r)
+	if err != nil {
+		return m.wrap("decoding ui tile %d", err, n)
+	}
+	if img.Bounds().Max.X != 256 || img.Bounds().Max.Y != 256 {
+		return m.wrap("decoding ui tile",
+			errors.New("ui page images must be 256x256 pixels in size"))
+	}
+	face := image.NewRGBA(image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims))
+	for fy := 0; fy < 16; fy++ {
+		for fx := 0; fx < 16; fx++ {
+			draw.Draw(
+				face, image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims),
+				img, image.Pt(fx*c3d.FaceDims, fy*c3d.FaceDims),
+				draw.Src)
+			if isEmpty(face) {
+				continue
+			}
+			ns := fmt.Sprintf("/%s/%02X%02X%02X", m.ID, n, fx, fy)
+			uiTilesMap[ns] = UITiles.AddFace(face)
+		}
+	}
+	return nil
 }

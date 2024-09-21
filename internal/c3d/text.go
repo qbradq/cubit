@@ -1,6 +1,9 @@
 package c3d
 
-import gl "github.com/go-gl/gl/v3.1/gles2"
+import (
+	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 // vsGlyphWidth is the width of one glyph in virtual screen units, minus boarder
 // width.
@@ -9,7 +12,12 @@ const vsGlyphWidth int = VirtualScreenWidth / 80
 // vsGlyphBoarder is the boarder width in virtual screen units.
 const vsGlyphBoarder int = vsGlyphWidth / 2
 
-// Text is a drawable string of text.
+// vsLineSpacing is the line spacing used in print commands in virtual screen
+// units.
+const vsLineSpacing int = (vsGlyphWidth / 2) * 3 // 1.5
+
+// Text is a drawable layer of text. Text may be printed into the layer at any
+// point, and may overlap.
 type Text struct {
 	f        *fontManager // Font manager in use
 	d        []float32    // Vertex buffer data
@@ -27,8 +35,8 @@ func newText(f *fontManager, prg *program) *Text {
 	gl.GenVertexArrays(1, &ret.vao)
 	gl.GenBuffers(1, &ret.vbo)
 	// ret.Set("Hello, OpenGL!")
-	ret.Set("@ABCDEFGHIJKLMNO")
-	// Load data into buffers
+	ret.Print(mgl32.Vec2{0, float32(vsGlyphWidth / 2)}, "@ABCDEFGHIJKLMNO")
+	// Configure buffer attributes
 	var stride int32 = 2*4 + 2*4
 	var offset int = 0
 	gl.BindVertexArray(ret.vao)
@@ -44,12 +52,25 @@ func newText(f *fontManager, prg *program) *Text {
 	return ret
 }
 
-// Set sets the contents.
-func (text *Text) Set(s string) {
-	text.d = text.d[:0]
-	l := float32(-vsGlyphBoarder)
+// Reset resets the text object to blank. Internal memory buffers are retained
+// to reduce allocations.
+func (t *Text) Reset() {
+	t.d = t.d[:0]
+	t.vboDirty = true
+}
+
+// Print prints a string at the given screen position in virtual screen units.
+// Note that the baseline of the text will appear at the given Y coordinate.
+func (text *Text) Print(p mgl32.Vec2, s string) {
+	p[1] = (float32(VirtualScreenHeight) - p[1]) - 1 // Invert Y
+	l := float32(-vsGlyphBoarder) + p[0]
+	b := p[1] - float32(vsGlyphWidth)
 	for _, sr := range s {
-		b := float32(-vsGlyphBoarder)
+		if sr == '\n' {
+			l = float32(-vsGlyphBoarder) + p[0]
+			b += float32(vsLineSpacing)
+			continue
+		}
 		t := b + float32(vsGlyphWidth+vsGlyphBoarder*2)
 		r := l + float32(vsGlyphWidth+vsGlyphBoarder*2)
 		g := text.f.getGlyph(sr)
@@ -73,10 +94,13 @@ func (text *Text) Set(s string) {
 
 // upload uploads the VBO data.
 func (t *Text) upload() {
+	t.vboDirty = false
+	if len(t.d) == 0 {
+		return
+	}
 	gl.BindVertexArray(t.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(t.d)*4, gl.Ptr(t.d), gl.STATIC_DRAW)
-	t.vboDirty = false
 }
 
 func (t *Text) draw() {
