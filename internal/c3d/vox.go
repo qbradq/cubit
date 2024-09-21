@@ -9,10 +9,10 @@ func NewVoxBuilder() *VoxBuilder {
 	return &VoxBuilder{}
 }
 
-// BuildCubeMesh builds a CubeMesh object from the passed voxel data.
-func (g *VoxBuilder) BuildCubeMesh(voxels [][4]uint8,
-	width, height, depth int) *CubeMesh {
-	ret := NewCubeMesh(true)
+// BuildVoxelMesh builds a VoxelMesh object from the passed voxel data.
+func (g *VoxBuilder) BuildVoxelMesh(voxels [][4]uint8,
+	width, height, depth int) *VoxelMesh {
+	ret := NewVoxelMesh()
 	face := func(pos [3]int, f Facing, c [4]uint8) {
 		transparent := false
 		np := [3]int{}
@@ -31,7 +31,7 @@ func (g *VoxBuilder) BuildCubeMesh(voxels [][4]uint8,
 			transparent = voxels[idx][3] < 255
 		}
 		if transparent {
-			ret.AddVoxelFace(pos, f, c)
+			ret.AddFace(pos, f, c)
 		}
 	}
 	// Visible face only build

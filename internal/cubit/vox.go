@@ -28,10 +28,10 @@ const VoxRefInvalid VoxRef = 0xFFFF
 
 // Vox manages an RGBA voxel image.
 type Vox struct {
-	Ref                  VoxRef        // Voxel reference
-	mesh                 *c3d.CubeMesh // Mesh
-	width, height, depth int           // Dimensions
-	voxels               [][4]uint8    // RGBA voxels
+	Ref                  VoxRef         // Voxel reference
+	mesh                 *c3d.VoxelMesh // Mesh
+	width, height, depth int            // Dimensions
+	voxels               [][4]uint8     // RGBA voxels
 }
 
 // GetVoxByPath returns the vox model by mod path.
@@ -58,7 +58,7 @@ var voxDefs = []*Vox{}
 // NewVox creates a new Vox object ready to use.
 func NewVox(v *util.Vox) *Vox {
 	return &Vox{
-		mesh:   voxBuilder.BuildCubeMesh(v.Voxels, v.Width, v.Height, v.Depth),
+		mesh:   voxBuilder.BuildVoxelMesh(v.Voxels, v.Width, v.Height, v.Depth),
 		width:  v.Width,
 		height: v.Height,
 		depth:  v.Depth,
@@ -66,17 +66,13 @@ func NewVox(v *util.Vox) *Vox {
 	}
 }
 
-func (g *Vox) ReplaceMesh(m *c3d.CubeMesh) {
-	g.mesh = m
-}
-
-// Draw draws the Gox object at the given location with the given orientation.
-func (g *Vox) Draw(prg *c3d.Program, pos Position, f c3d.Facing) {
+// Add adds this voxel's mesh to the app's list of voxel models to draw.
+func (g *Vox) Add(a *c3d.App, pos Position, f c3d.Facing) {
 	o := ftd[f]
 	o.Position = mgl32.Vec3{
 		float32(pos.X) + 0.5,
 		float32(pos.Y) + 0.5,
 		float32(pos.Z) + 0.5,
 	}
-	prg.DrawCubeMesh(g.mesh, o)
+	a.AddVoxelMesh(g.mesh, o)
 }

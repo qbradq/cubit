@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 )
 
 const minVoxFileVersion uint32 = 150
@@ -87,8 +88,8 @@ func NewVoxFromReader(r io.Reader) (*Vox, error) {
 				y := int(GetByte(cr))
 				idx := uint8(GetByte(cr))
 				xyziBuf[y*ret.Width*ret.Depth+
-					((ret.Depth-1)-z)*ret.Width+
-					x] = idx
+					((ret.Width-1)-x)*ret.Width+
+					z] = idx
 			}
 		case "RGBA":
 			cr := bytes.NewReader(c.data)
@@ -97,6 +98,9 @@ func NewVoxFromReader(r io.Reader) (*Vox, error) {
 				pal[i+1][1] = GetByte(cr)
 				pal[i+1][2] = GetByte(cr)
 				pal[i+1][3] = GetByte(cr)
+				if pal[i+1][3] < 255 {
+					log.Println(pal[i+1][3])
+				}
 			}
 		}
 	}

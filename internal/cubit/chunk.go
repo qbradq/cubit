@@ -209,14 +209,26 @@ func (c *Chunk) compile() {
 	}
 }
 
-// Draw draws the chunk using the provided c3d program.
-func (c *Chunk) Draw(prg *c3d.Program) {
+// Add adds the chunk to the app for rendering.
+func (c *Chunk) Add(app *c3d.App) {
 	if c.cubesDirty {
 		c.compile()
 		c.cubesDirty = false
 	}
-	prg.DrawCubeMesh(c.mesh, c3d.OrientationZero)
-	for i, v := range c.vox {
-		prg.DrawCubeMesh(v.mesh, &c.vos[i])
+	app.AddCubeMesh(c.mesh, c3d.OrientationZero)
+	for i := range c.vox {
+		app.AddVoxelMesh(c.vox[i].mesh, &c.vos[i])
 	}
 }
+
+// // Draw draws the chunk using the provided c3d program.
+// func (c *Chunk) Draw(prg *c3d.Program) {
+// 	if c.cubesDirty {
+// 		c.compile()
+// 		c.cubesDirty = false
+// 	}
+// 	prg.DrawCubeMesh(c.mesh, c3d.OrientationZero)
+// 	for i, v := range c.vox {
+// 		prg.DrawCubeMesh(v.mesh, &c.vos[i])
+// 	}
+// }

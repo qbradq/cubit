@@ -26,3 +26,7 @@ go.work.sum
 
 # External tools directory
 /tools
+
+# Output files
+cubit
+

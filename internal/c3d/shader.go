@@ -2,30 +2,30 @@ package c3d
 
 import gl "github.com/go-gl/gl/v3.1/gles2"
 
-// ShaderType indicates the type of shader.
-type ShaderType int
+// shaderType indicates the type of shader.
+type shaderType int
 
 const (
-	ShaderTypeVertex   ShaderType = 0 // Vertex shader
-	ShaderTypeFragment ShaderType = 1 // Fragment shader
+	shaderTypeVertex   shaderType = 0 // Vertex shader
+	shaderTypeFragment shaderType = 1 // Fragment shader
 )
 
-// Shader manages a single shader.
-type Shader struct {
+// shader manages a single shader.
+type shader struct {
 	id uint32 // OpenGL ID of the shader
 }
 
-// NewShader creates a new Shader ready for use.
-func NewShader(src string, t ShaderType) (*Shader, error) {
+// newShader creates a new Shader ready for use.
+func newShader(src string, t shaderType) (*shader, error) {
 	ts := "vertex"
-	if t == ShaderTypeFragment {
+	if t == shaderTypeFragment {
 		ts = "fragment"
 	}
-	ret := &Shader{}
+	ret := &shader{}
 	switch t {
-	case ShaderTypeVertex:
+	case shaderTypeVertex:
 		ret.id = gl.CreateShader(gl.VERTEX_SHADER)
-	case ShaderTypeFragment:
+	case shaderTypeFragment:
 		ret.id = gl.CreateShader(gl.FRAGMENT_SHADER)
 	}
 	glStrs, freeFunc := gl.Strs(src + "\x00")
@@ -39,7 +39,7 @@ func NewShader(src string, t ShaderType) (*Shader, error) {
 	return ret, nil
 }
 
-// Delete deletes the shader.
-func (s *Shader) Delete() {
+// delete deletes the shader.
+func (s *shader) delete() {
 	gl.DeleteProgram(s.id)
 }

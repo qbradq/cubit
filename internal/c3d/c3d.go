@@ -8,6 +8,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// VirtualScreenWidth is the width of the virtual 2D screen in pixels.
+const VirtualScreenWidth int = 320
+
+// VirtualScreenHeight is the width of the virtual 2D screen in pixels.
+const VirtualScreenHeight int = 180
+
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.
 type Facing uint8
 
@@ -47,20 +53,19 @@ type getObjInfoLog func(uint32, int32, *int32, *uint8)
 
 func getGlError(glHandle uint32, checkTrueParam uint32, getObjIvFn getObjIv,
 	getObjInfoLogFn getObjInfoLog, failMsg string) error {
-
 	var success int32
 	getObjIvFn(glHandle, checkTrueParam, &success)
-
 	if success == gl.FALSE {
 		var logLength int32
 		getObjIvFn(glHandle, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := gl.Str(strings.Repeat("\x00", int(logLength)))
-		getObjInfoLogFn(glHandle, logLength, nil, log)
-
-		return fmt.Errorf("%s: %s", failMsg, gl.GoStr(log))
+		log := "NO LOG"
+		if logLength > 0 {
+			gls := gl.Str(strings.Repeat("\x00", int(logLength)))
+			getObjInfoLogFn(glHandle, logLength, nil, gls)
+			log = gl.GoStr(gls)
+		}
+		return fmt.Errorf("%s: %s", failMsg, log)
 	}
-
 	return nil
 }
 

@@ -104,9 +104,6 @@ func NewFaceAtlas() *FaceAtlas {
 		img: image.NewRGBA(image.Rect(0, 0, atlasTextureDims,
 			atlasTextureDims)),
 	}
-	for i := range ret.img.Pix {
-		ret.img.Pix[i] = 0xFF
-	}
 	return ret
 }
 
@@ -138,7 +135,7 @@ func (a *FaceAtlas) AddFace(img *image.RGBA) FaceIndex {
 // upload uploads the entire face atlas to the GPU as a 2D texture array.
 func (a *FaceAtlas) upload() {
 	gl.GenTextures(1, &a.textureID)
-	gl.ActiveTexture(gl.TEXTURE1)
+	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, a.textureID)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
@@ -150,14 +147,14 @@ func (a *FaceAtlas) upload() {
 }
 
 // bind binds the texture to the 3D texture unit.
-func (a *FaceAtlas) bind(u int32) {
-	gl.ActiveTexture(gl.TEXTURE1)
+func (a *FaceAtlas) bind(prg *program) {
+	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, a.textureID)
-	gl.Uniform1i(u, 1)
+	gl.Uniform1i(prg.uni("uAtlas"), 0)
 }
 
 // unbind un-binds the texture from the 3D texture unit.
 func (a *FaceAtlas) unbind() {
-	gl.ActiveTexture(gl.TEXTURE1)
+	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 }

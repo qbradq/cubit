@@ -1,42 +1,62 @@
 package c3d
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/data"
 )
 
-const (
-	drawModeColor   int32 = 0
-	drawModeAtlas   int32 = 1
-	drawModeTexture int32 = 2
-)
-
-// Program manages a GPU program with vertex and pixel shaders.
-type Program struct {
-	id        uint32     // OpenGL ID of the program
-	vShader   *Shader    // Vertex shader
-	fShader   *Shader    // Fragment shader
-	tex0      *Texture   // Texture bound to uniform tex0
-	atlas     *FaceAtlas // Atlas used to render textured cube mesh
-	aPos      int32      // pos attribute location
-	aTex      int32      // tex attribute location
-	uDrawMode int32      // drawMode uniform location
-	uWorld    int32      // world uniform location
-	uTexture  int32      // tex0 uniform location
-	uAtlas    int32      // atlas uniform location
+// program manages a single GPU program.
+type program struct {
+	id      uint32  // ID of the program
+	vShader *shader // Vertex shader
+	fShader *shader // Fragment shader
 }
 
-// NewProgram creates a new Program ready for use with the given resources.
-func NewProgram(v, f *Shader, tex0 *Texture, atlas *FaceAtlas) (*Program, error) {
-	ret := &Program{
-		id:      gl.CreateProgram(),
-		vShader: v,
-		fShader: f,
-		tex0:    tex0,
-		atlas:   atlas,
+// loadProgram loads the named GLSL version 1.00 vertex+fragment shader program.
+func loadProgram(name string) (*program, error) {
+	d, err := data.FS.ReadFile(filepath.Join("glsl", name+".glsl"))
+	if err != nil {
+		return nil, err
 	}
+	lines := strings.Split(string(d), "\n")
+	which := 0
+	var vSrc, fSrc string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		switch strings.ToLower(line) {
+		case "[vertex]":
+			which = 1
+		case "[fragment]":
+			which = 2
+		default:
+			switch which {
+			case 1:
+				vSrc += line + "\n"
+			case 2:
+				fSrc += line + "\n"
+			default:
+				return nil, fmt.Errorf(
+					"in glsl program %s, no shader target given", name)
+			}
+		}
+	}
+	ret := &program{}
+	ret.vShader, err = newShader(vSrc, shaderTypeVertex)
+	if err != nil {
+		return nil, fmt.Errorf("in glsl program %s, vertex shader: %s", name,
+			err)
+	}
+	ret.fShader, err = newShader(fSrc, shaderTypeFragment)
+	if err != nil {
+		return nil, fmt.Errorf("in glsl program %s, fragment shader: %s", name,
+			err)
+	}
+	ret.id = gl.CreateProgram()
 	gl.AttachShader(ret.id, ret.vShader.id)
 	gl.AttachShader(ret.id, ret.fShader.id)
 	gl.LinkProgram(ret.id)
@@ -44,35 +64,23 @@ func NewProgram(v, f *Shader, tex0 *Texture, atlas *FaceAtlas) (*Program, error)
 		gl.GetProgramInfoLog, "program:link"); err != nil {
 		return nil, err
 	}
-	ret.aPos = ret.GetAttributeLocation("pos")
-	ret.aTex = ret.GetAttributeLocation("texPos")
-	ret.uDrawMode = ret.GetUniformLocation("drawMode")
-	ret.uWorld = ret.GetUniformLocation("world")
-	ret.uTexture = ret.GetUniformLocation("tex")
-	ret.uAtlas = ret.GetUniformLocation("atlas")
-	ret.tex0.bind(ret.uTexture)
-	ret.atlas.upload()
-	ret.atlas.freeMemory()
-	ret.atlas.bind(ret.uAtlas)
 	return ret, nil
 }
 
-// Delete deletes the program.
-func (p *Program) Delete() {
-	p.tex0.unbind()
-	p.atlas.unbind()
-	p.vShader.Delete()
-	p.fShader.Delete()
+// delete deletes the program.
+func (p *program) delete() {
+	p.vShader.delete()
+	p.fShader.delete()
 	gl.DeleteProgram(p.id)
 }
 
-// Use makes this program the active one.
-func (p *Program) Use() {
+// use makes this program the active one.
+func (p *program) use() {
 	gl.UseProgram(p.id)
 }
 
-// GetAttributeLocation returns the id of a named shader attribute.
-func (p *Program) GetAttributeLocation(name string) int32 {
+// attr returns the id of a named shader attribute.
+func (p *program) attr(name string) int32 {
 	id := gl.GetAttribLocation(p.id, gl.Str(name+"\x00"))
 	if id < 0 {
 		log.Println("warning: unable to locate shader attribute \"" + name + "\"")
@@ -80,8 +88,8 @@ func (p *Program) GetAttributeLocation(name string) int32 {
 	return id
 }
 
-// GetUniformLocation returns the id of a named shader uniform.
-func (p *Program) GetUniformLocation(name string) int32 {
+// uni returns the id of a named shader uniform.
+func (p *program) uni(name string) int32 {
 	id := gl.GetUniformLocation(p.id, gl.Str(name+"\x00"))
 	if id < 0 {
 		log.Println("warning: unable to locate shader uniform \"" + name + "\"")
@@ -89,12 +97,29 @@ func (p *Program) GetUniformLocation(name string) int32 {
 	return id
 }
 
-// DrawCubeMesh draws a cube mesh.
-func (p *Program) DrawCubeMesh(m *CubeMesh, o *Orientation) {
-	m.draw(p, o)
-}
-
-// NewAxisIndicator creates a new axis indicator at the given location.
-func (p *Program) NewAxisIndicator(pos mgl32.Vec3) *AxisIndicator {
-	return newAxisIndicator(pos, p)
-}
+// // DrawCubeMesh draws a cube mesh.
+// func (p *Program) DrawCubeMesh(m *CubeMesh, o *Orientation) {
+// 	if m.vao == invalidVAO {
+// 		gl.GenVertexArrays(1, &m.vao)
+// 	}
+// 	if m.vbo == invalidVBO {
+// 		gl.GenBuffers(1, &m.vbo)
+// 	}
+// 	if !m.vboCurrent {
+// 		p.fillBuffer(m.vao, m.vbo, m.d)
+// 		m.vboCurrent = true
+// 	}
+// 	mt := p.Camera.TransformMatrix().Mul4(o.TransformMatrix())
+// 	gl.UniformMatrix4fv(p.uModelView, 1, false, &mt[0])
+// 	nt := mt.Inv().Transpose()
+// 	gl.UniformMatrix4fv(p.uNormal, 1, false, &nt[0])
+// 	if m.voxel {
+// 		gl.Uniform1i(p.uDrawMode, drawModeColor)
+// 	} else {
+// 		gl.Uniform1i(p.uDrawMode, drawModeAtlas)
+// 		p.atlas.bind(p.uAtlas)
+// 	}
+// 	gl.BindVertexArray(m.vao)
+// 	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
+// 	gl.BindVertexArray(0)
+// }
