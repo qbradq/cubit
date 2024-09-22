@@ -4,5 +4,5 @@ import (
 	"embed"
 )
 
-//go:embed glsl textures mono.ttf
+//go:embed glsl mono.ttf
 var FS embed.FS

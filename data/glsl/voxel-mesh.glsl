@@ -14,7 +14,8 @@ varying vec3 color;
 
 void main() {
 	color = aVertexColor;
-	normal = (uNormalMatrix * vec4(aVertexNormal, 1.0)).xyz;
+	vec3 norm = aVertexNormal - vec3(1.0, 1.0, 1.0);
+	normal = (uNormalMatrix * vec4(norm, 1.0)).xyz;
 	gl_Position = uProjectionMatrix * uModelViewMatrix *
 		vec4(aVertexPosition, 1.0);
 }

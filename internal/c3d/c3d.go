@@ -52,6 +52,15 @@ var FacingOffsets = [6][3]int{
 	{0, -1, 0},
 }
 
+var facingNormalCompressed = [6][3]byte{
+	{1, 1, 0},
+	{1, 1, 2},
+	{2, 1, 1},
+	{0, 1, 1},
+	{1, 2, 1},
+	{1, 0, 1},
+}
+
 type getObjIv func(uint32, uint32, *int32)
 type getObjInfoLog func(uint32, int32, *int32, *uint8)
 

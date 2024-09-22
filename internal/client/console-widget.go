@@ -31,8 +31,6 @@ func newConsoleWidget(app *c3d.App) *consoleWidget {
 	ret := &consoleWidget{
 		baseWidget: *newBaseWidget(app),
 		lines:      make([]string, conLines),
-		prompt:     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-		// prompt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit,",
 	}
 	ret.cp = len(ret.prompt)
 	// Setup UI

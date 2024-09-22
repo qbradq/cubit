@@ -80,6 +80,9 @@ func Main() {
 	chunk := world.GetChunkByRef(cubit.ChunkRefFromCoords(cubit.Pos(0, 0, 0)))
 	chunk.Add(app)
 	cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
+	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	// vox := cubit.GetVoxByPath("/cubit/debug")
+	// vox.Add(app, cubit.Pos(0, 0, 0), c3d.North)
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state
@@ -104,7 +107,6 @@ func Main() {
 }
 
 func glInit() (*c3d.App, error) {
-	// Global initialization
 	if err := gl.Init(); err != nil {
 		return nil, err
 	}
@@ -122,7 +124,6 @@ func glInit() (*c3d.App, error) {
 }
 
 func cameraInput(cam *c3d.Camera) {
-	// TODO Remove Update camera
 	speed := walkSpeed * dt
 	if input.IsPressed("forward") {
 		dir := cam.Front

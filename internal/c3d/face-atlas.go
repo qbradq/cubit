@@ -80,6 +80,14 @@ func (t FaceIndex) ToUV() (mgl32.Vec2, mgl32.Vec2) {
 		}
 }
 
+// toCompressedUV returns the UV (texture coordinates) that should be assigned
+// to the top-left and bottom-right vertexes of a face for the given FaceIndex
+// value, represented as the compressed face UV.
+func (t FaceIndex) toCompressedUV() ([2]byte, [2]byte) {
+	x, y := t.ToAtlasXY()
+	return [2]byte{byte(x), byte(y)}, [2]byte{byte(x + 1), byte(y + 1)}
+}
+
 // FaceIndexFromXYZ returns the FaceIndex value for the given coordinates, where
 // X and Y range 0-7 and Z ranges 0-255.
 func FaceIndexFromXYZ(x, y, z int) FaceIndex {

@@ -27,7 +27,7 @@ type App struct {
 	uiMeshes    []*UIMesh      // List of UI meshes to draw
 	axis        *AxisIndicator // Debug axis indicator
 	pRGBFB      *program       // RGB with no lighting
-	pRGB        *program       // RGB
+	pVoxelMesh  *program       // RGB
 	pCubeMesh   *program       // Face atlas texturing
 	pText       *program       // Text rendering
 	pUI         *program       // UI tile rendering
@@ -44,18 +44,18 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 		tiles: tiles,
 	}
 	// rgb_fullbright.glsl
-	ret.pRGBFB, err = loadProgram("rgb_fullbright")
+	ret.pRGBFB, err = loadProgram("rgb-fullbright")
 	if err != nil {
 		return nil, err
 	}
 	ret.axis = newAxisIndicator(mgl32.Vec3{0, 0, 0}, ret.pRGBFB)
 	// rgb.glsl
-	ret.pRGB, err = loadProgram("rgb")
+	ret.pVoxelMesh, err = loadProgram("voxel-mesh")
 	if err != nil {
 		return nil, err
 	}
 	// cube_mesh.glsl
-	ret.pCubeMesh, err = loadProgram("cube_mesh")
+	ret.pCubeMesh, err = loadProgram("cube-mesh")
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 
 // Delete removes all memory and GPU resources managed by the app.
 func (a *App) Delete() {
-	a.pRGB.delete()
+	a.pVoxelMesh.delete()
 	a.pRGBFB.delete()
 	a.pCubeMesh.delete()
 	a.pText.delete()
@@ -127,23 +127,27 @@ func (a *App) Draw(c *Camera) {
 		&pMat[0])
 	a.faces.bind(a.pCubeMesh)
 	for _, m := range a.cubeMeshes {
-		mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
+		vm := c.TransformMatrix()
+		mm := m.o.TransformMatrix()
+		// gl.UniformMatrix4fv(a.pCubeMesh.uni("uViewMatrix"), 1, false, &vm[0])
+		// gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelMatrix"), 1, false, &mm[0])
+		mvm := vm.Mul4(mm)
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
-			&mt[0])
-		nt := mt.Inv().Transpose()
+			&mvm[0])
+		nt := (vm.Mul4(mm)).Inv().Transpose()
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uNormalMatrix"), 1, false, &nt[0])
 		m.m.draw(a.pCubeMesh)
 	}
 	// Draw voxel models
-	a.pRGB.use()
-	gl.UniformMatrix4fv(int32(a.pRGB.uni("uProjectionMatrix")), 1, false,
+	a.pVoxelMesh.use()
+	gl.UniformMatrix4fv(int32(a.pVoxelMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
 	for _, v := range a.voxelMeshes {
 		mt := c.TransformMatrix().Mul4(v.o.TransformMatrix())
-		gl.UniformMatrix4fv(a.pRGB.uni("uModelViewMatrix"), 1, false, &mt[0])
+		gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelViewMatrix"), 1, false, &mt[0])
 		nt := mt.Inv().Transpose()
-		gl.UniformMatrix4fv(a.pRGB.uni("uNormalMatrix"), 1, false, &nt[0])
-		v.m.draw(a.pRGB)
+		gl.UniformMatrix4fv(a.pVoxelMesh.uni("uNormalMatrix"), 1, false, &nt[0])
+		v.m.draw(a.pVoxelMesh)
 	}
 	// Draw UI elements, tiles layer
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
