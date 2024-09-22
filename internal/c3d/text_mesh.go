@@ -18,9 +18,9 @@ const vsCellHeight int = int(float32(vsGlyphWidth) * (float32(faCellHeight) / fl
 // vsBaseline is the Y offset for baseline in virtual screen units.
 const vsBaseline int = vsCellHeight / 4
 
-// vsLineSpacing is the line spacing used in print commands in virtual screen
+// LineSpacingVS is the line spacing used in print commands in virtual screen
 // units.
-const vsLineSpacing int = (vsGlyphWidth / 2) * 3 // 1.5
+const LineSpacingVS int = (vsGlyphWidth / 2) * 3 // 1.5
 
 // TextMesh is a drawable layer of text. TextMesh may be printed into the layer
 // at any point, and may overlap.
@@ -75,7 +75,7 @@ func (text *TextMesh) Print(p mgl32.Vec2, s string) {
 	for _, sr := range s {
 		if sr == '\n' {
 			l = p[0]
-			b += float32(vsLineSpacing)
+			b += float32(LineSpacingVS)
 			continue
 		}
 		t := b + float32(vsCellHeight)

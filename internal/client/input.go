@@ -6,20 +6,28 @@ import (
 )
 
 var KeyConfig = map[string][]glfw.Key{
-	"cancel":   {glfw.KeyEscape},
-	"forward":  {glfw.KeyW},
-	"backward": {glfw.KeyS},
-	"left":     {glfw.KeyA},
-	"right":    {glfw.KeyD},
-	"up":       {glfw.KeyV},
-	"down":     {glfw.KeyC},
-	"console":  {glfw.KeyGraveAccent},
+	"cancel":    {glfw.KeyEscape},
+	"confirm":   {glfw.KeyEnter},
+	"forward":   {glfw.KeyW},
+	"backward":  {glfw.KeyS},
+	"left":      {glfw.KeyA},
+	"right":     {glfw.KeyD},
+	"up":        {glfw.KeyV},
+	"down":      {glfw.KeyC},
+	"console":   {glfw.KeyGraveAccent},
+	"backspace": {glfw.KeyBackspace},
+	"delete":    {glfw.KeyDelete},
+	"ui-left":   {glfw.KeyLeft},
+	"ui-right":  {glfw.KeyRight},
+	"ui-up":     {glfw.KeyUp},
+	"ui-down":   {glfw.KeyDown},
 }
 
 // Input manages the input and input configuration.
 type Input struct {
 	CursorPosition mgl32.Vec2         // Current position of the mouse on the screen
 	CursorDelta    mgl32.Vec2         // How far the mouse traveled this frame
+	CharsThisFrame []rune             // List of runes generated this frame
 	keysPressed    [glfw.KeyLast]bool // Array of all key states
 	keysPushed     [glfw.KeyLast]bool // Array of all keys that had their release events this frame
 	lastCursorPos  mgl32.Vec2         // Last position of the mouse on the screen
@@ -33,20 +41,27 @@ func NewInput(win *glfw.Window, screenSize mgl32.Vec2) *Input {
 	}
 	ret.CursorPosition = ret.lastCursorPos
 	win.SetKeyCallback(ret.keyCallback)
+	win.SetCharCallback(ret.charCallback)
 	// win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	win.SetCursorPosCallback(ret.posCallback)
 	return ret
+}
+
+func (n *Input) charCallback(w *glfw.Window, char rune) {
+	n.CharsThisFrame = append(n.CharsThisFrame, char)
 }
 
 func (n *Input) keyCallback(win *glfw.Window, key glfw.Key, scanCode int,
 	action glfw.Action, mods glfw.ModifierKey) {
 	switch action {
 	case glfw.Press:
+		fallthrough
+	case glfw.Repeat:
 		n.keysPressed[key] = true
-		n.keysPushed[key] = false
+		n.keysPushed[key] = true
 	case glfw.Release:
 		n.keysPressed[key] = false
-		n.keysPushed[key] = true
+		n.keysPushed[key] = false
 	}
 }
 
@@ -95,8 +110,9 @@ func (n *Input) WasPressed(action string) bool {
 	return false
 }
 
-// resetKeysPushed resets the keysPush array.
-func (n *Input) resetKeysPushed() {
+// startFrame resets the keysPush array.
+func (n *Input) startFrame() {
+	n.CharsThisFrame = n.CharsThisFrame[:0]
 	for i := range n.keysPushed {
 		n.keysPushed[i] = false
 	}
