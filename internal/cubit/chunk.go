@@ -153,7 +153,6 @@ func (c *Chunk) At(p Position) (*Cube, *Vox, c3d.Facing) {
 
 // compile compiles the chunk's mesh.
 func (c *Chunk) compile() {
-	var center mgl32.Vec3
 	var p Position
 	var cube *Cube
 	var vox *Vox
@@ -164,10 +163,10 @@ func (c *Chunk) compile() {
 		if nc != nil && !nc.Transparent {
 			return
 		}
-		c.mesh.AddFace(center, side, cube.Faces[side])
+		c.mesh.AddFace(byte(p.X), byte(p.Y), byte(p.Z), side, cube.Faces[side])
 	}
 	if c.mesh == nil {
-		c.mesh = c3d.NewCubeMesh(false)
+		c.mesh = c3d.NewCubeMesh()
 	}
 	c.mesh.Reset()
 	c.vox = c.vox[:0]
@@ -181,9 +180,9 @@ func (c *Chunk) compile() {
 					c.vox = append(c.vox, vox)
 					c.vos = append(c.vos, *c3d.NewOrientation(
 						mgl32.Vec3{
-							float32(p.X+c.pos.X) + 0.5,
-							float32(p.Y+c.pos.Y) + 0.5,
-							float32(p.Z+c.pos.Z) + 0.5,
+							float32(p.X) + 0.5,
+							float32(p.Y) + 0.5,
+							float32(p.Z) + 0.5,
 						},
 						c3d.FacingToOrientation[f].GetPitch(),
 						c3d.FacingToOrientation[f].GetYaw(),
@@ -192,11 +191,6 @@ func (c *Chunk) compile() {
 				}
 				if cube == nil || cube.Transparent {
 					continue
-				}
-				center = mgl32.Vec3{
-					float32(p.X) + 0.5,
-					float32(p.Y) + 0.5,
-					float32(p.Z) + 0.5,
 				}
 				face(c3d.North)
 				face(c3d.South)
