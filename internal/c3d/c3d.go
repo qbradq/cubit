@@ -14,6 +14,10 @@ const VirtualScreenWidth int = 320
 // VirtualScreenHeight is the width of the virtual 2D screen in pixels.
 const VirtualScreenHeight int = 180
 
+// NinePatch describes the resources used to generate an arbitrarily sized
+// rectangle skinned with nine tiles stretched over the area.
+type NinePatch [9]FaceIndex
+
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.
 type Facing uint8
 

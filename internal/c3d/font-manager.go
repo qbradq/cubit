@@ -3,9 +3,7 @@ package c3d
 import (
 	"image"
 	"image/draw"
-	"image/png"
 	"log"
-	"os"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/golang/freetype/truetype"
@@ -16,10 +14,13 @@ import (
 
 const faDims int = 2048
 const faGlyphSize int = 32
-const faGlyphDims int = 64
-const faGlyphOfs int = (faGlyphDims - faGlyphSize) / 2
-const faGlyphsWide int = faDims / faGlyphDims
-const faAtlasStep float32 = float32(faGlyphDims) / float32(faDims)
+const faCellWidth int = 32
+const faCellHeight int = 64
+const faCellXOfs int = (faCellWidth - faGlyphSize) / 2
+const faCellYOfs int = (faCellHeight - faGlyphSize) / 2
+const faCellsWide int = faDims / faCellWidth
+const faAtlasStepU float32 = float32(faCellWidth) / float32(faDims)
+const faAtlasStepV float32 = float32(faCellHeight) / float32(faDims)
 
 // glyph describes the attributes of a single glyph in the atlas.
 type glyph struct {
@@ -71,17 +72,6 @@ func newFontManager(prg *program) *fontManager {
 	for i := 32; i < 128; i++ {
 		ret.cacheGlyph(rune(i))
 	}
-	// TODO REMOVE DEBUG
-	f, err := os.Create("font.png")
-	if err != nil {
-		panic(err)
-	}
-	err = png.Encode(f, ret.img)
-	if err != nil {
-		f.Close()
-		panic(err)
-	}
-	f.Close()
 	// GL setup
 	prg.use()
 	gl.GenTextures(1, &ret.t)
@@ -124,15 +114,15 @@ func (t *fontManager) cacheGlyph(r rune) glyph {
 	gb.Load(t.f, t.scale, truetype.Index(r), font.HintingNone)
 	g := glyph{
 		width: gb.AdvanceWidth.Ceil(),
-		u:     float32(i%faGlyphsWide) * faAtlasStep,
-		v:     float32(i/faGlyphsWide) * faAtlasStep,
+		u:     float32(i%faCellsWide) * faAtlasStepU,
+		v:     float32(i/faCellsWide) * faAtlasStepV,
 	}
 	t.glyphMap[r] = uint16(i)
 	t.glyphs = append(t.glyphs, g)
 	// Update the backing image
 	t.d.Dot = fixed.P(
-		(i%faGlyphsWide)*faGlyphDims+faGlyphOfs,
-		(i/faGlyphsWide)*faGlyphDims+(faGlyphDims-faGlyphOfs),
+		(i%faCellsWide)*faCellWidth+faCellXOfs,
+		(i/faCellsWide)*faCellHeight+(faCellHeight-faCellYOfs),
 	)
 	t.d.DrawString(string(r))
 	t.imgDirty = true

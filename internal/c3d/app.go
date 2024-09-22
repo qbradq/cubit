@@ -22,23 +22,26 @@ type cubeMeshRef struct {
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	cubeMeshes  []cubeMeshRef  // List of cube meshes to draw
+	cubeMeshes  []cubeMeshRef  // List of cube meshes to draw along with orientation
 	voxelMeshes []voxelMeshRef // List of voxel meshes to draw along with orientation
+	uiMeshes    []*UIMesh      // List of UI meshes to draw
 	axis        *AxisIndicator // Debug axis indicator
 	pRGBFB      *program       // RGB with no lighting
 	pRGB        *program       // RGB
 	pCubeMesh   *program       // Face atlas texturing
 	pText       *program       // Text rendering
-	atlas       *FaceAtlas     // Face atlas to use for cube mesh rendering
+	pUI         *program       // UI tile rendering
+	faces       *FaceAtlas     // Face atlas to use for cube mesh rendering
+	tiles       *FaceAtlas     // Face atlas to use for ui tile rendering
 	fm          *fontManager   // Font manager for the application
-	textDebug   *Text          // TODO REMOVE DEBUG
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
-func NewApp(atlas *FaceAtlas) (*App, error) {
+func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	var err error
 	ret := &App{
-		atlas: atlas,
+		faces: faces,
+		tiles: tiles,
 	}
 	// rgb_fullbright.glsl
 	ret.pRGBFB, err = loadProgram("rgb_fullbright")
@@ -56,16 +59,21 @@ func NewApp(atlas *FaceAtlas) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret.atlas.upload(ret.pCubeMesh)
-	ret.atlas.freeMemory()
+	ret.faces.upload(ret.pCubeMesh)
+	ret.faces.freeMemory()
 	// text.glsl
 	ret.pText, err = loadProgram("text")
 	if err != nil {
 		return nil, err
 	}
 	ret.fm = newFontManager(ret.pText)
-	// TODO REMOVE DEBUG
-	ret.textDebug = newText(ret.fm, ret.pText)
+	// ui.glsl
+	ret.pUI, err = loadProgram("ui")
+	if err != nil {
+		return nil, err
+	}
+	ret.tiles.upload(ret.pUI)
+	ret.tiles.freeMemory()
 	return ret, nil
 }
 
@@ -89,6 +97,16 @@ func (a *App) AddCubeMesh(m *CubeMesh, o *Orientation) {
 	a.cubeMeshes = append(a.cubeMeshes, cubeMeshRef{m: m, o: *o})
 }
 
+// NewUIMesh creates and returns a new UIMesh.
+func (a *App) NewUIMesh() *UIMesh {
+	return newUIMesh(a.fm, a.pUI)
+}
+
+// AddUIMesh adds the UI mesh to the list to render.
+func (a *App) AddUIMesh(m *UIMesh) {
+	a.uiMeshes = append(a.uiMeshes, m)
+}
+
 // Draw draws everything with the given camera for 3D space..
 func (a *App) Draw(c *Camera) {
 	// Variable setup
@@ -107,7 +125,7 @@ func (a *App) Draw(c *Camera) {
 	a.pCubeMesh.use()
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
-	a.atlas.bind(a.pCubeMesh)
+	a.faces.bind(a.pCubeMesh)
 	for _, m := range a.cubeMeshes {
 		mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
@@ -127,7 +145,19 @@ func (a *App) Draw(c *Camera) {
 		gl.UniformMatrix4fv(a.pRGB.uni("uNormalMatrix"), 1, false, &nt[0])
 		v.m.draw(a.pRGB)
 	}
-	// TODO Draw UI
+	// Draw UI elements, tiles layer
+	gl.Clear(gl.DEPTH_BUFFER_BIT)
+	a.pUI.use()
+	pMat = mgl32.Ortho2D(0, float32(VirtualScreenWidth), 0,
+		float32(VirtualScreenHeight))
+	gl.UniformMatrix4fv(a.pUI.uni("uProjectionMatrix"), 1, false, &pMat[0])
+	a.tiles.bind(a.pUI)
+	for _, m := range a.uiMeshes {
+		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
+			m.Layer)
+		m.draw()
+	}
+	// Draw UI elements, text layer
 	a.pText.use()
 	if a.fm.imgDirty {
 		a.fm.updateAtlasTexture()
@@ -136,6 +166,9 @@ func (a *App) Draw(c *Camera) {
 		float32(VirtualScreenHeight))
 	gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false, &pMat[0])
 	a.fm.bind(a.pText)
-	// TODO REMOVE DEBUG
-	a.textDebug.draw()
+	for _, m := range a.uiMeshes {
+		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
+			m.Layer)
+		m.Text.draw()
+	}
 }

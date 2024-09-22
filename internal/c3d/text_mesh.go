@@ -9,16 +9,22 @@ import (
 // width.
 const vsGlyphWidth int = VirtualScreenWidth / 80
 
-// vsGlyphBoarder is the boarder width in virtual screen units.
-const vsGlyphBoarder int = vsGlyphWidth / 2
+// CellDimsVS is the dimensions of a cell in screen units.
+const CellDimsVS int = vsGlyphWidth
+
+// vsCellHeight is the height of one font atlas cell in virtual screen units.
+const vsCellHeight int = int(float32(vsGlyphWidth) * (float32(faCellHeight) / float32(faCellWidth)))
+
+// vsBaseline is the Y offset for baseline in virtual screen units.
+const vsBaseline int = vsCellHeight / 4
 
 // vsLineSpacing is the line spacing used in print commands in virtual screen
 // units.
 const vsLineSpacing int = (vsGlyphWidth / 2) * 3 // 1.5
 
-// Text is a drawable layer of text. Text may be printed into the layer at any
-// point, and may overlap.
-type Text struct {
+// TextMesh is a drawable layer of text. TextMesh may be printed into the layer
+// at any point, and may overlap.
+type TextMesh struct {
 	f        *fontManager // Font manager in use
 	d        []float32    // Vertex buffer data
 	vao      uint32       // Vertex buffer array ID
@@ -26,16 +32,14 @@ type Text struct {
 	vboDirty bool         // If true, the VBO needs to be updated
 }
 
-// newText creates a new Text with the given contents ready to use.
-func newText(f *fontManager, prg *program) *Text {
+// newTextMesh creates a new text mesh with the given contents ready to use.
+func newTextMesh(f *fontManager, prg *program) *TextMesh {
 	// Init
-	ret := &Text{
+	ret := &TextMesh{
 		f: f,
 	}
 	gl.GenVertexArrays(1, &ret.vao)
 	gl.GenBuffers(1, &ret.vbo)
-	// ret.Set("Hello, OpenGL!")
-	ret.Print(mgl32.Vec2{0, float32(vsGlyphWidth / 2)}, "@ABCDEFGHIJKLMNO")
 	// Configure buffer attributes
 	var stride int32 = 2*4 + 2*4
 	var offset int = 0
@@ -54,30 +58,33 @@ func newText(f *fontManager, prg *program) *Text {
 
 // Reset resets the text object to blank. Internal memory buffers are retained
 // to reduce allocations.
-func (t *Text) Reset() {
+func (t *TextMesh) Reset() {
 	t.d = t.d[:0]
-	t.vboDirty = true
+	t.vboDirty = false
 }
 
 // Print prints a string at the given screen position in virtual screen units.
-// Note that the baseline of the text will appear at the given Y coordinate.
-func (text *Text) Print(p mgl32.Vec2, s string) {
-	p[1] = (float32(VirtualScreenHeight) - p[1]) - 1 // Invert Y
-	l := float32(-vsGlyphBoarder) + p[0]
-	b := p[1] - float32(vsGlyphWidth)
+func (text *TextMesh) Print(p mgl32.Vec2, s string) {
+	if len(s) == 0 {
+		return
+	}
+	text.vboDirty = true
+	p[1] = float32(VirtualScreenHeight) - p[1] // Invert Y
+	l := p[0]
+	b := p[1] - float32(vsCellHeight-vsBaseline)
 	for _, sr := range s {
 		if sr == '\n' {
-			l = float32(-vsGlyphBoarder) + p[0]
+			l = p[0]
 			b += float32(vsLineSpacing)
 			continue
 		}
-		t := b + float32(vsGlyphWidth+vsGlyphBoarder*2)
-		r := l + float32(vsGlyphWidth+vsGlyphBoarder*2)
+		t := b + float32(vsCellHeight)
+		r := l + float32(vsGlyphWidth)
 		g := text.f.getGlyph(sr)
 		ut := g.v
-		ub := ut + faAtlasStep
+		ub := ut + faAtlasStepV
 		ul := g.u
-		ur := ul + faAtlasStep
+		ur := ul + faAtlasStepU
 		text.d = append(text.d, []float32{
 			//XY  U   V
 			l, t, ul, ut, // TL
@@ -89,11 +96,10 @@ func (text *Text) Print(p mgl32.Vec2, s string) {
 		}...)
 		l += float32(vsGlyphWidth)
 	}
-	text.vboDirty = true
 }
 
 // upload uploads the VBO data.
-func (t *Text) upload() {
+func (t *TextMesh) upload() {
 	t.vboDirty = false
 	if len(t.d) == 0 {
 		return
@@ -103,7 +109,7 @@ func (t *Text) upload() {
 	gl.BufferData(gl.ARRAY_BUFFER, len(t.d)*4, gl.Ptr(t.d), gl.STATIC_DRAW)
 }
 
-func (t *Text) draw() {
+func (t *TextMesh) draw() {
 	if t.vboDirty {
 		t.upload()
 	}

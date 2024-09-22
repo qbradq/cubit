@@ -10,6 +10,8 @@ import (
 	"github.com/qbradq/cubit/internal/cubit"
 )
 
+const vscd float32 = float32(c3d.CellDimsVS)
+
 // Configuration variables
 var mouseSensitivity float32 = 0.15
 var walkSpeed float32 = 5
@@ -55,10 +57,26 @@ func Main() {
 	world := cubit.NewWorld()
 	chunk := world.GetChunkByRef(cubit.ChunkRefFromCoords(cubit.Pos(0, 0, 0)))
 	chunk.Add(app)
-	// vox := cubit.GetVoxByPath("/cubit/debug")
-	// vox.Add(app, cubit.Pos(0, 0, 0), c3d.North)
 	cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
-	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	ninePatch := c3d.NinePatch{
+		cubit.GetUITile("/cubit/000"),
+		cubit.GetUITile("/cubit/010"),
+		cubit.GetUITile("/cubit/020"),
+		cubit.GetUITile("/cubit/001"),
+		cubit.GetUITile("/cubit/011"),
+		cubit.GetUITile("/cubit/021"),
+		cubit.GetUITile("/cubit/002"),
+		cubit.GetUITile("/cubit/012"),
+		cubit.GetUITile("/cubit/022"),
+	}
+	uim := app.NewUIMesh()
+	uim.Position = mgl32.Vec2{vscd * 8, vscd * 4}
+	uim.NinePatch(mgl32.Vec2{0, 0},
+		mgl32.Vec2{float32(c3d.CellDimsVS) * 16, float32(c3d.CellDimsVS) * 8},
+		ninePatch)
+	uim.Text.Print(mgl32.Vec2{float32(c3d.CellDimsVS), float32(c3d.CellDimsVS)},
+		"Hello World!!!")
+	app.AddUIMesh(uim)
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state
@@ -130,5 +148,5 @@ func glInit() (*c3d.App, error) {
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	gl.FrontFace(gl.CW)
-	return c3d.NewApp(cubit.Faces)
+	return c3d.NewApp(cubit.Faces, cubit.UITiles)
 }

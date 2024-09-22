@@ -20,7 +20,7 @@ const FaceDims = 16
 // atlasDims are the X and Y dimensions of the face atlas in faces.
 const atlasDims = atlasTextureDims / FaceDims
 
-// Stepping value for face S and T offsets.
+// Stepping value for face U and V offsets.
 const pageStep float32 = float32(1) / float32(atlasDims)
 
 // FaceIndex indexes a tile in the face atlas. The 4 least significant bits
@@ -66,19 +66,17 @@ func (t FaceIndex) ToAtlasXY() (x int, y int) {
 	return
 }
 
-// ToST returns the ST (texture coordinates) that should be assigned to the
+// ToUV returns the UV (texture coordinates) that should be assigned to the
 // top-left and bottom-right vertexes of a face for the given FaceIndex value.
-func (t FaceIndex) ToST() (mgl32.Vec3, mgl32.Vec3) {
+func (t FaceIndex) ToUV() (mgl32.Vec2, mgl32.Vec2) {
 	x, y := t.ToAtlasXY()
-	return mgl32.Vec3{
+	return mgl32.Vec2{
 			float32(x) * pageStep,
 			float32(y) * pageStep,
-			0,
 		},
-		mgl32.Vec3{
+		mgl32.Vec2{
 			float32(x+1) * pageStep,
 			float32(y+1) * pageStep,
-			0,
 		}
 }
 

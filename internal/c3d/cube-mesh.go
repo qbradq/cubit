@@ -33,7 +33,7 @@ func NewCubeMesh(voxel bool) *CubeMesh {
 // AddFace adds a face at the given position with the given normal. The face
 // will be placed 0.5 units from the position in the direction of the normal.
 func (m *CubeMesh) AddFace(p mgl32.Vec3, facing Facing, f FaceIndex) {
-	tl, br := f.ToST()
+	tl, br := f.ToUV()
 	n := FaceNormals[facing]
 	o := cubeFacingOffsets[facing]
 	m.d = append(m.d,
