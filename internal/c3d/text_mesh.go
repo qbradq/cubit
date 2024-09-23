@@ -98,20 +98,14 @@ func (text *TextMesh) Print(p mgl32.Vec2, s string) {
 	}
 }
 
-// upload uploads the VBO data.
-func (t *TextMesh) upload() {
-	t.vboDirty = false
-	if len(t.d) == 0 {
-		return
-	}
-	gl.BindVertexArray(t.vao)
-	gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(t.d)*4, gl.Ptr(t.d), gl.STATIC_DRAW)
-}
-
 func (t *TextMesh) draw() {
 	if t.vboDirty {
-		t.upload()
+		if len(t.d) > 0 {
+			gl.BindVertexArray(t.vao)
+			gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
+			gl.BufferData(gl.ARRAY_BUFFER, len(t.d)*4, gl.Ptr(t.d), gl.STATIC_DRAW)
+		}
+		t.vboDirty = false
 	}
 	gl.BindVertexArray(t.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(t.d)))

@@ -34,20 +34,12 @@ func newConsoleWidget(app *c3d.App) *consoleWidget {
 	}
 	ret.cp = len(ret.prompt)
 	// Setup UI
-	ret.NinePatch(mgl32.Vec2{
-		0,
-		0,
-	}, mgl32.Vec2{
-		float32(c3d.VirtualScreenWidth),
-		float32(c3d.VirtualScreenHeight) - float32(c3d.CellDimsVS*3),
-	}, npWindow)
-	ret.NinePatch(mgl32.Vec2{
-		0,
-		float32(c3d.VirtualScreenHeight) - float32(c3d.CellDimsVS*3),
-	}, mgl32.Vec2{
-		float32(c3d.VirtualScreenWidth),
-		float32(c3d.CellDimsVS * 3),
-	}, npWindow)
+	ret.NinePatch(0, 0,
+		c3d.VirtualScreenWidth, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
+		npWindow)
+	ret.NinePatch(0, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
+		c3d.VirtualScreenWidth, c3d.CellDimsVS*3,
+		npWindow)
 	ret.Position = mgl32.Vec2{0, -float32(c3d.VirtualScreenHeight)}
 	return ret
 }
@@ -148,10 +140,6 @@ func (w *consoleWidget) isFocused() bool {
 // input handles focused input.
 func (w *consoleWidget) input() {
 	for _, r := range input.CharsThisFrame {
-		if r == '~' || r == '`' {
-			w.stepVisibility()
-			continue
-		}
 		pl := w.prompt[:w.cp]
 		pr := w.prompt[w.cp:]
 		w.prompt = pl + string(r) + pr
@@ -184,6 +172,13 @@ func (w *consoleWidget) input() {
 		w.prompt = ""
 		w.cp = 0
 		w.textDirty = true
+	}
+	if input.WasPressed("console") {
+		w.stepVisibility()
+	}
+	if input.WasPressed("cancel") {
+		w.vis = 2
+		w.stepVisibility()
 	}
 }
 

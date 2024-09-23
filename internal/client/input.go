@@ -5,22 +5,27 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-var KeyConfig = map[string][]glfw.Key{
-	"cancel":    {glfw.KeyEscape},
-	"confirm":   {glfw.KeyEnter},
-	"forward":   {glfw.KeyW},
-	"backward":  {glfw.KeyS},
-	"left":      {glfw.KeyA},
-	"right":     {glfw.KeyD},
-	"up":        {glfw.KeyV},
-	"down":      {glfw.KeyC},
-	"console":   {glfw.KeyGraveAccent},
-	"backspace": {glfw.KeyBackspace},
-	"delete":    {glfw.KeyDelete},
-	"ui-left":   {glfw.KeyLeft},
-	"ui-right":  {glfw.KeyRight},
-	"ui-up":     {glfw.KeyUp},
-	"ui-down":   {glfw.KeyDown},
+type keySpec struct {
+	key glfw.Key
+	mod glfw.ModifierKey
+}
+
+var KeyConfig = map[string][]keySpec{
+	"cancel":    []keySpec{{glfw.KeyEscape, 0}},
+	"confirm":   []keySpec{{glfw.KeyEnter, 0}},
+	"forward":   []keySpec{{glfw.KeyW, 0}},
+	"backward":  []keySpec{{glfw.KeyS, 0}},
+	"left":      []keySpec{{glfw.KeyA, 0}},
+	"right":     []keySpec{{glfw.KeyD, 0}},
+	"up":        []keySpec{{glfw.KeyV, 0}},
+	"down":      []keySpec{{glfw.KeyC, 0}},
+	"console":   []keySpec{{glfw.KeyGraveAccent, glfw.ModControl}},
+	"backspace": []keySpec{{glfw.KeyBackspace, 0}},
+	"delete":    []keySpec{{glfw.KeyDelete, 0}},
+	"ui-left":   []keySpec{{glfw.KeyLeft, 0}},
+	"ui-right":  []keySpec{{glfw.KeyRight, 0}},
+	"ui-up":     []keySpec{{glfw.KeyUp, 0}},
+	"ui-down":   []keySpec{{glfw.KeyDown, 0}},
 }
 
 // Input manages the input and input configuration.
@@ -28,6 +33,7 @@ type Input struct {
 	CursorPosition mgl32.Vec2         // Current position of the mouse on the screen
 	CursorDelta    mgl32.Vec2         // How far the mouse traveled this frame
 	CharsThisFrame []rune             // List of runes generated this frame
+	Mods           glfw.ModifierKey   // Modifier key mask this frame
 	keysPressed    [glfw.KeyLast]bool // Array of all key states
 	keysPushed     [glfw.KeyLast]bool // Array of all keys that had their release events this frame
 	lastCursorPos  mgl32.Vec2         // Last position of the mouse on the screen
@@ -53,6 +59,7 @@ func (n *Input) charCallback(w *glfw.Window, char rune) {
 
 func (n *Input) keyCallback(win *glfw.Window, key glfw.Key, scanCode int,
 	action glfw.Action, mods glfw.ModifierKey) {
+	n.Mods |= mods
 	switch action {
 	case glfw.Press:
 		fallthrough
@@ -88,7 +95,7 @@ func (n *Input) IsPressed(action string) bool {
 		return false
 	}
 	for _, key := range keys {
-		if n.keysPressed[key] {
+		if n.keysPressed[key.key] && n.Mods&key.mod == key.mod {
 			return true
 		}
 	}
@@ -103,7 +110,7 @@ func (n *Input) WasPressed(action string) bool {
 		return false
 	}
 	for _, key := range keys {
-		if n.keysPushed[key] {
+		if n.keysPushed[key.key] && n.Mods&key.mod == key.mod {
 			return true
 		}
 	}
@@ -113,6 +120,7 @@ func (n *Input) WasPressed(action string) bool {
 // startFrame resets the keysPush array.
 func (n *Input) startFrame() {
 	n.CharsThisFrame = n.CharsThisFrame[:0]
+	n.Mods = 0
 	for i := range n.keysPushed {
 		n.keysPushed[i] = false
 	}

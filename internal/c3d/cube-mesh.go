@@ -48,12 +48,6 @@ func (m *CubeMesh) AddFace(x, y, z byte, f Facing, face FaceIndex) {
 	tl, br := face.toCompressedUV()
 	o := cubeFacingOffsetsI[f]
 	// X          Y             Z             S      T      Normal XYZ
-	// m.vert(p[0]+o[0][0], p[1]+o[0][1], p[2]+o[0][2], tl[0], tl[1], f) // Top left
-	// m.vert(p[0]+o[1][0], p[1]+o[1][1], p[2]+o[1][2], br[0], tl[1], f) // Top right
-	// m.vert(p[0]+o[2][0], p[1]+o[2][1], p[2]+o[2][2], tl[0], br[1], f) // Bottom left
-	// m.vert(p[0]+o[3][0], p[1]+o[3][1], p[2]+o[3][2], tl[0], br[1], f) // Bottom left
-	// m.vert(p[0]+o[4][0], p[1]+o[4][1], p[2]+o[4][2], br[0], tl[1], f) // Top right
-	// m.vert(p[0]+o[5][0], p[1]+o[5][1], p[2]+o[5][2], br[0], br[1], f) // Bottom right
 	m.vert(x+o[0][0], y+o[0][1], z+o[0][2], tl[0], tl[1], f) // Top left
 	m.vert(x+o[1][0], y+o[1][1], z+o[1][2], br[0], tl[1], f) // Top right
 	m.vert(x+o[2][0], y+o[2][1], z+o[2][2], tl[0], br[1], f) // Bottom left
@@ -67,6 +61,7 @@ func (m *CubeMesh) AddFace(x, y, z byte, f Facing, face FaceIndex) {
 // Reset rests the mesh builder state.
 func (m *CubeMesh) Reset() {
 	m.d = m.d[:0]
+	m.count = 0
 	m.vboCurrent = false
 }
 
