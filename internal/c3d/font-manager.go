@@ -19,8 +19,6 @@ const faCellHeight int = 64
 const faCellXOfs int = (faCellWidth - faGlyphSize) / 2
 const faCellYOfs int = (faCellHeight - faGlyphSize) / 2
 const faCellsWide int = faDims / faCellWidth
-const faAtlasStepU float32 = float32(faCellWidth) / float32(faDims)
-const faAtlasStepV float32 = float32(faCellHeight) / float32(faDims)
 
 // glyph describes the attributes of a single glyph in the atlas.
 type glyph struct {

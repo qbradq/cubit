@@ -32,6 +32,7 @@ func newConsoleWidget(app *c3d.App) *consoleWidget {
 		baseWidget: *newBaseWidget(app),
 		lines:      make([]string, conLines),
 	}
+	ret.Layer = layerConsole
 	ret.cp = len(ret.prompt)
 	// Setup UI
 	ret.NinePatch(0, 0,

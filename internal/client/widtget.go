@@ -2,11 +2,12 @@ package client
 
 import "github.com/qbradq/cubit/internal/c3d"
 
-// widget is the interface that all widgets implement.
-type widget interface {
-	// update executes per-frame updates.
-	update()
-}
+const (
+	layerCursor    uint16 = 0xFFFF
+	layerConsole   uint16 = 0xFFFE
+	layerCrosshair uint16 = 0xFFFD
+	layerHighest   uint16 = 0xFFFC
+)
 
 // baseWidget is a mixin struct that provides common functionality to all
 // widgets.

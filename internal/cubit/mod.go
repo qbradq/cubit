@@ -364,7 +364,7 @@ func (m *Mod) loadUIPage(n uint8, r io.Reader) error {
 			if isEmpty(face) {
 				continue
 			}
-			ns := fmt.Sprintf("/%s/%0X%01X%01X", m.ID, n, fx, fy)
+			ns := fmt.Sprintf("/%s/%0X%01X%01X", m.ID, n, fy, fx)
 			uiTilesMap[ns] = UITiles.AddFace(face)
 		}
 	}

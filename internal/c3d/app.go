@@ -22,18 +22,22 @@ type cubeMeshRef struct {
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	cubeMeshes  []cubeMeshRef  // List of cube meshes to draw along with orientation
-	voxelMeshes []voxelMeshRef // List of voxel meshes to draw along with orientation
-	uiMeshes    []*UIMesh      // List of UI meshes to draw
-	axis        *AxisIndicator // Debug axis indicator
-	pRGBFB      *program       // RGB with no lighting
-	pVoxelMesh  *program       // RGB
-	pCubeMesh   *program       // Face atlas texturing
-	pText       *program       // Text rendering
-	pUI         *program       // UI tile rendering
-	faces       *FaceAtlas     // Face atlas to use for cube mesh rendering
-	tiles       *FaceAtlas     // Face atlas to use for ui tile rendering
-	fm          *fontManager   // Font manager for the application
+	cubeMeshes    []cubeMeshRef  // List of cube meshes to draw along with orientation
+	voxelMeshes   []voxelMeshRef // List of voxel meshes to draw along with orientation
+	uiMeshes      []*UIMesh      // List of UI meshes to draw
+	cursor        *UIMesh        // Cursor mesh
+	drawCursor    bool           // If true, draw the cursor
+	crosshair     *UIMesh        // Crosshair mesh
+	drawCrosshair bool           // If true, draw the crosshair
+	axis          *AxisIndicator // Debug axis indicator
+	pRGBFB        *program       // RGB with no lighting
+	pVoxelMesh    *program       // RGB
+	pCubeMesh     *program       // Face atlas texturing
+	pText         *program       // Text rendering
+	pUI           *program       // UI tile rendering
+	faces         *FaceAtlas     // Face atlas to use for cube mesh rendering
+	tiles         *FaceAtlas     // Face atlas to use for ui tile rendering
+	fm            *fontManager   // Font manager for the application
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -83,6 +87,40 @@ func (a *App) Delete() {
 	a.pRGBFB.delete()
 	a.pCubeMesh.delete()
 	a.pText.delete()
+}
+
+// SetCursor sets the UI tile to use as the mouse cursor.
+func (a *App) SetCursor(f FaceIndex, l uint16) {
+	a.cursor = a.NewUIMesh()
+	a.cursor.Scaled(0, 0, vsGlyphWidth*2, vsGlyphWidth*2, f)
+	a.cursor.Layer = l
+}
+
+// SetCursorPosition sets the cursor position.
+func (a *App) SetCursorPosition(p mgl32.Vec2) {
+	if a.cursor == nil {
+		return
+	}
+	a.cursor.Position = p
+}
+
+// SetCursorVisible sets the visibility of the cursor.
+func (a *App) SetCursorVisible(v bool) {
+	a.drawCursor = v
+}
+
+// SetCrosshair sets the UI tile to use as the 3D crosshair.
+func (a *App) SetCrosshair(f FaceIndex, l uint16) {
+	a.crosshair = a.NewUIMesh()
+	a.crosshair.Scaled(0, 0, vsGlyphWidth*2, vsGlyphWidth*2, f)
+	a.crosshair.Position[0] = float32(VirtualScreenWidth-vsGlyphWidth*2) / 2
+	a.crosshair.Position[1] = float32(VirtualScreenHeight-vsGlyphWidth*2) / 2
+	a.crosshair.Layer = l
+}
+
+// SetCrosshairVisible sets the visibility of the crosshair.
+func (a *App) SetCrosshairVisible(v bool) {
+	a.drawCrosshair = v
 }
 
 // AddVoxelMesh adds the voxel mesh to the list to render. The value of o is
@@ -158,7 +196,20 @@ func (a *App) Draw(c *Camera) {
 	a.tiles.bind(a.pUI)
 	for _, m := range a.uiMeshes {
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
-			m.Layer)
+			float32(m.Layer)/0xFFFF)
+		m.draw()
+	}
+	// Draw common screen components
+	if a.drawCrosshair && a.crosshair != nil {
+		m := a.crosshair
+		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
+			float32(m.Layer)/0xFFFF)
+		m.draw()
+	}
+	if a.drawCursor && a.cursor != nil {
+		m := a.cursor
+		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
+			float32(m.Layer)/0xFFFF)
 		m.draw()
 	}
 	// Draw UI elements, text layer
@@ -172,7 +223,7 @@ func (a *App) Draw(c *Camera) {
 	a.fm.bind(a.pText)
 	for _, m := range a.uiMeshes {
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
-			m.Layer)
+			float32(m.Layer)/0xFFFF)
 		m.Text.draw()
 	}
 }

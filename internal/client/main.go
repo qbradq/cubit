@@ -62,27 +62,28 @@ func Main() {
 	// Globals init
 	npWindow = c3d.NinePatch{
 		cubit.GetUITile("/cubit/000"),
-		cubit.GetUITile("/cubit/010"),
-		cubit.GetUITile("/cubit/020"),
 		cubit.GetUITile("/cubit/001"),
-		cubit.GetUITile("/cubit/011"),
-		cubit.GetUITile("/cubit/021"),
 		cubit.GetUITile("/cubit/002"),
+		cubit.GetUITile("/cubit/010"),
+		cubit.GetUITile("/cubit/011"),
 		cubit.GetUITile("/cubit/012"),
+		cubit.GetUITile("/cubit/020"),
+		cubit.GetUITile("/cubit/022"),
 		cubit.GetUITile("/cubit/022"),
 	}
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
 	console = newConsoleWidget(app)
-	console.add(app)
 	console.printf("%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
+	console.add(app)
+	app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
+	app.SetCrosshairVisible(true)
+	app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
+	app.SetCursorVisible(false)
 	// Main loop
 	world := cubit.NewWorld()
 	chunk := world.GetChunkByRef(cubit.ChunkRefFromCoords(cubit.Pos(0, 0, 0)))
 	chunk.Add(app)
 	cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
-	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
-	// vox := cubit.GetVoxByPath("/cubit/debug")
-	// vox.Add(app, cubit.Pos(0, 0, 0), c3d.North)
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state

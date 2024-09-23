@@ -15,7 +15,7 @@ const vsTileDims int = 4
 type UIMesh struct {
 	Text     *TextMesh  // Text layer
 	Position mgl32.Vec2 // Position of the element in virtual screen units
-	Layer    float32    // Layer
+	Layer    uint16     // Layer index, the higher the value the higher priority
 	d        []byte     // Vertex buffer data
 	count    int32      // Vertex count
 	vao      uint32     // Vertex buffer array ID
