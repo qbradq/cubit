@@ -10,7 +10,7 @@ attribute vec2 aVertexUV;
 varying vec2 uv;
 
 void main() {
-	uv = aVertexUV;
+	uv = aVertexUV / vec2(64.0, 32.0);
 	gl_Position = uProjectionMatrix * vec4(vec3(aVertexPosition, 0.0)+uPosition, 1.0);
 }
 

@@ -64,10 +64,11 @@ func (m *VoxelMesh) AddFace(pos [3]int, f Facing, c [4]uint8) {
 	m.vboCurrent = false
 }
 
-// reset rests the mesh builder state.
-func (m *VoxelMesh) reset() {
+// Reset rests the mesh builder state.
+func (m *VoxelMesh) Reset() {
 	m.d = m.d[:0]
-	m.vboCurrent = false
+	m.count = 0
+	m.vboCurrent = true
 }
 
 // draw draws the voxel mesh.

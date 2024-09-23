@@ -24,8 +24,7 @@ const faAtlasStepV float32 = float32(faCellHeight) / float32(faDims)
 
 // glyph describes the attributes of a single glyph in the atlas.
 type glyph struct {
-	width int     // Width of the glyph in pixels
-	u, v  float32 // UV coordinates for this glyph in the texture atlas.
+	u, v, w int
 }
 
 // fontManager manages font rendering for an app.
@@ -113,16 +112,16 @@ func (t *fontManager) cacheGlyph(r rune) glyph {
 	gb := &truetype.GlyphBuf{}
 	gb.Load(t.f, t.scale, truetype.Index(r), font.HintingNone)
 	g := glyph{
-		width: gb.AdvanceWidth.Ceil(),
-		u:     float32(i%faCellsWide) * faAtlasStepU,
-		v:     float32(i/faCellsWide) * faAtlasStepV,
+		w: gb.AdvanceWidth.Ceil(),
+		u: i % faCellsWide,
+		v: i / faCellsWide,
 	}
 	t.glyphMap[r] = uint16(i)
 	t.glyphs = append(t.glyphs, g)
 	// Update the backing image
 	t.d.Dot = fixed.P(
-		(i%faCellsWide)*faCellWidth+faCellXOfs,
-		(i/faCellsWide)*faCellHeight+(faCellHeight-faCellYOfs),
+		g.u*faCellWidth+faCellXOfs,
+		g.v*faCellHeight+(faCellHeight-faCellYOfs),
 	)
 	t.d.DrawString(string(r))
 	t.imgDirty = true

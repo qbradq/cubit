@@ -62,7 +62,7 @@ func (m *CubeMesh) AddFace(x, y, z byte, f Facing, face FaceIndex) {
 func (m *CubeMesh) Reset() {
 	m.d = m.d[:0]
 	m.count = 0
-	m.vboCurrent = false
+	m.vboCurrent = true
 }
 
 // draw draws the cube mesh.

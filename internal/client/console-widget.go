@@ -90,19 +90,18 @@ func (w *consoleWidget) drawText() {
 	if li < 0 {
 		li = conLines - 1
 	}
-	p := mgl32.Vec2{float32(c3d.CellDimsVS),
-		float32(c3d.CellDimsVS * conHeight)}
+	p := [2]int{c3d.CellDimsVS, c3d.CellDimsVS * conHeight}
 	for {
-		if p[1] < float32(c3d.CellDimsVS) {
+		if p[1] < c3d.CellDimsVS {
 			break
 		}
 		line := w.lines[li]
-		w.Text.Print(p, line)
+		w.Text.Print(p[0], p[1], line)
 		li--
 		if li < 0 {
 			li = conLines - 1
 		}
-		p[1] -= float32(c3d.LineSpacingVS)
+		p[1] -= c3d.LineSpacingVS
 	}
 	// Adjust prompt offset
 	l := w.po
@@ -118,11 +117,11 @@ func (w *consoleWidget) drawText() {
 	if len(prompt) >= conWidth {
 		prompt = prompt[:conWidth]
 	}
-	p[1] = float32(c3d.CellDimsVS * (conHeight + 3))
-	w.Text.Print(p, prompt)
+	p[1] = c3d.CellDimsVS * (conHeight + 3)
+	w.Text.Print(p[0], p[1], prompt)
 	// Draw caret
-	p[0] = float32(c3d.CellDimsVS * ((c - l) + 1))
-	w.Text.Print(p, "_")
+	p[0] = c3d.CellDimsVS * ((c - l) + 1)
+	w.Text.Print(p[0], p[1], "_")
 }
 
 // update implements the widget interface.
