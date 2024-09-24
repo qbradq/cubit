@@ -1,6 +1,8 @@
 [VERTEX]
 #version 100
 
+const float scale = 1.0/16.0;
+
 uniform mat4 uModelViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform mat4 uNormalMatrix;
@@ -17,7 +19,7 @@ void main() {
 	vec3 norm = aVertexNormal - vec3(1.0, 1.0, 1.0);
 	normal = (uNormalMatrix * vec4(norm, 1.0)).xyz;
 	gl_Position = uProjectionMatrix * uModelViewMatrix *
-		vec4(aVertexPosition, 1.0);
+		vec4(aVertexPosition*scale, 1.0);
 }
 
 [FRAGMENT]

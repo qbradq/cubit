@@ -207,7 +207,7 @@ func (a *App) Draw(c *Camera) {
 		&pMat[0])
 	if a.ChunkBoundsVisible {
 		for _, m := range a.cubeMeshes {
-			mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
+			mt := c.TransformMatrix()
 			gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false,
 				&mt[0])
 			m.m.drawAABB(a.pRGBFB)
@@ -222,11 +222,6 @@ func (a *App) Draw(c *Camera) {
 		&pMat[0])
 	a.faces.bind(a.pCubeMesh)
 	for _, m := range a.cubeMeshes {
-		// vm := c.TransformMatrix()
-		// mm := m.o.TransformMatrix()
-		// gl.UniformMatrix4fv(a.pCubeMesh.uni("uViewMatrix"), 1, false, &vm[0])
-		// gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelMatrix"), 1, false, &mm[0])
-		// mvm := vm.Mul4(mm)
 		mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
 			&mt[0])

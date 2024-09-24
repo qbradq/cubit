@@ -49,16 +49,22 @@ func (l Cell) Decompose() (c *Cube, v *Vox, f c3d.Facing) {
 	return
 }
 
+// voxD is a voxel description encoding position, orientation, and model.
+type voxD struct {
+	vox *Vox
+	pos Position
+	f   c3d.Facing
+}
+
 // Chunk represents a 16x16x16 chunk of space.
 type Chunk struct {
-	pos        Position          // Position representing the global location of the chunk
-	aabb       vox.AABB          // Bounding box of the chunk
-	o          c3d.Orientation   // Cached orientation value for the chunk
-	cubes      vox.Chunk[Cell]   // Cells of the chunk
-	mesh       *c3d.CubeMesh     // Mesh object used to build the vbo data for the cube mesh
-	vox        []*Vox            // List of all vox models to draw
-	vos        []c3d.Orientation // List of orientations to use when drawing vox
-	cubesDirty bool              // When true, the cube array has changed since the last call to compile()
+	pos        Position        // Position representing the global location of the chunk
+	aabb       vox.AABB        // Bounding box of the chunk
+	o          c3d.Orientation // Cached orientation value for the chunk
+	cubes      vox.Chunk[Cell] // Cells of the chunk
+	mesh       *c3d.CubeMesh   // Mesh object used to build the vbo data for the cube mesh
+	vox        []voxD          // List of all vox models to draw
+	cubesDirty bool            // When true, the cube array has changed since the last call to compile()
 }
 
 // NewChunk creates a new Chunk ready for use.
@@ -140,24 +146,17 @@ func (c *Chunk) compile() {
 	}
 	c.mesh.Reset()
 	c.vox = c.vox[:0]
-	c.vos = c.vos[:0]
 	for p.Y = 0; p.Y < ChunkHeight; p.Y++ {
 		for p.Z = 0; p.Z < ChunkDepth; p.Z++ {
 			for p.X = 0; p.X < ChunkWidth; p.X++ {
 				cell := c.GetRelative(p)
 				cube, vox, f = cell.Decompose()
 				if vox != nil {
-					c.vox = append(c.vox, vox)
-					c.vos = append(c.vos, *c3d.NewOrientation(
-						mgl32.Vec3{
-							float32(p.X) + 0.5,
-							float32(p.Y) + 0.5,
-							float32(p.Z) + 0.5,
-						},
-						c3d.FacingToOrientation[f].GetPitch(),
-						c3d.FacingToOrientation[f].GetYaw(),
-						c3d.FacingToOrientation[f].GetRoll(),
-					))
+					c.vox = append(c.vox, voxD{
+						vox: vox,
+						pos: p,
+						f:   f,
+					})
 				}
 				if cube == nil || cube.Transparent {
 					continue
@@ -179,20 +178,13 @@ func (c *Chunk) Add(app *c3d.App) {
 		c.compile()
 		c.cubesDirty = false
 	}
-	app.AddCubeMesh(c.mesh, c3d.OrientationZero)
-	for i := range c.vox {
-		app.AddVoxelMesh(c.vox[i].mesh, &c.vos[i])
+	app.AddCubeMesh(c.mesh, c3d.NewOrientation(
+		mgl32.Vec3{
+			float32(c.pos.X),
+			float32(c.pos.Y),
+			float32(c.pos.Z),
+		}, 0, 0, 0))
+	for _, d := range c.vox {
+		d.vox.Add(app, d.pos, d.f)
 	}
 }
-
-// // Draw draws the chunk using the provided c3d program.
-// func (c *Chunk) Draw(prg *c3d.Program) {
-// 	if c.cubesDirty {
-// 		c.compile()
-// 		c.cubesDirty = false
-// 	}
-// 	prg.DrawCubeMesh(c.mesh, c3d.OrientationZero)
-// 	for i, v := range c.vox {
-// 		prg.DrawCubeMesh(v.mesh, &c.vos[i])
-// 	}
-// }

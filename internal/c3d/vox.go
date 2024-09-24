@@ -30,8 +30,9 @@ func (g *VoxBuilder) BuildVoxelMesh(voxels [][4]uint8,
 			idx += np[0]
 			transparent = voxels[idx][3] < 255
 		}
+		p := [3]uint8{uint8(pos[0]), uint8(pos[1]), uint8(pos[2])}
 		if transparent {
-			ret.AddFace(pos, f, c)
+			ret.AddFace(p, f, c)
 		}
 	}
 	// Visible face only build

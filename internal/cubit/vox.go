@@ -70,9 +70,9 @@ func NewVox(v *util.Vox) *Vox {
 func (g *Vox) Add(a *c3d.App, pos Position, f c3d.Facing) {
 	o := ftd[f]
 	o.Position = mgl32.Vec3{
-		float32(pos.X) + 0.5,
-		float32(pos.Y) + 0.5,
-		float32(pos.Z) + 0.5,
+		float32(pos.X),
+		float32(pos.Y),
+		float32(pos.Z),
 	}
 	a.AddVoxelMesh(g.mesh, o)
 }

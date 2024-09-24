@@ -82,9 +82,9 @@ func Main() {
 	app.ChunkBoundsVisible = true
 	// World setup
 	world := cubit.NewWorld()
-	// chunk := world.GetChunk(cubit.Pos(0, 0, 0))
-	//chunk.Add(app)
-	chunk := world.GetChunk(cubit.Pos(1, 0, 0))
+	chunk := world.GetChunk(cubit.Pos(0, 0, 0))
+	chunk.Add(app)
+	chunk = world.GetChunk(cubit.Pos(1, 0, 0))
 	chunk.Add(app)
 	cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
 	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
