@@ -6,9 +6,12 @@ import (
 	gl "github.com/go-gl/gl/v3.1/gles2"
 )
 
+// VirtualScreenGlyphsWide is the width of the screen in glyphs.
+const VirtualScreenGlyphsWide int = 80
+
 // vsGlyphWidth is the width of one glyph in virtual screen units, minus boarder
 // width.
-const vsGlyphWidth int = VirtualScreenWidth / 80
+const vsGlyphWidth int = VirtualScreenWidth / VirtualScreenGlyphsWide
 
 // CellDimsVS is the dimensions of a cell in screen units.
 const CellDimsVS int = vsGlyphWidth

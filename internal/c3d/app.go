@@ -1,6 +1,8 @@
 package c3d
 
 import (
+	"fmt"
+
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -22,22 +24,26 @@ type cubeMeshRef struct {
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	cubeMeshes    []cubeMeshRef  // List of cube meshes to draw along with orientation
-	voxelMeshes   []voxelMeshRef // List of voxel meshes to draw along with orientation
-	uiMeshes      []*UIMesh      // List of UI meshes to draw
-	cursor        *UIMesh        // Cursor mesh
-	drawCursor    bool           // If true, draw the cursor
-	crosshair     *UIMesh        // Crosshair mesh
-	drawCrosshair bool           // If true, draw the crosshair
-	axis          *AxisIndicator // Debug axis indicator
-	pRGBFB        *program       // RGB with no lighting
-	pVoxelMesh    *program       // RGB
-	pCubeMesh     *program       // Face atlas texturing
-	pText         *program       // Text rendering
-	pUI           *program       // UI tile rendering
-	faces         *FaceAtlas     // Face atlas to use for cube mesh rendering
-	tiles         *FaceAtlas     // Face atlas to use for ui tile rendering
-	fm            *fontManager   // Font manager for the application
+	CursorVisible      bool           // If true, draw the cursor
+	CrosshairVisible   bool           // If true, draw the crosshair
+	DebugTextVisible   bool           // If true, draw the debug text
+	ChunkBoundsVisible bool           // If true, draws the chunk bounds
+	cubeMeshes         []cubeMeshRef  // List of cube meshes to draw along with orientation
+	voxelMeshes        []voxelMeshRef // List of voxel meshes to draw along with orientation
+	uiMeshes           []*UIMesh      // List of UI meshes to draw
+	cursor             *UIMesh        // Cursor mesh
+	crosshair          *UIMesh        // Crosshair mesh
+	axis               *LineMesh      // Debug axis indicator
+	pRGBFB             *program       // RGB with no lighting
+	pVoxelMesh         *program       // RGB
+	pCubeMesh          *program       // Face atlas texturing
+	pText              *program       // Text rendering
+	pUI                *program       // UI tile rendering
+	faces              *FaceAtlas     // Face atlas to use for cube mesh rendering
+	tiles              *FaceAtlas     // Face atlas to use for ui tile rendering
+	fm                 *fontManager   // Font manager for the application
+	debugLines         []string       // Lines for the debug messages
+	debugText          *TextMesh      // Debug text
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -52,7 +58,6 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret.axis = newAxisIndicator(mgl32.Vec3{0, 0, 0}, ret.pRGBFB)
 	// rgb.glsl
 	ret.pVoxelMesh, err = loadProgram("voxel-mesh")
 	if err != nil {
@@ -71,6 +76,7 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 		return nil, err
 	}
 	ret.fm = newFontManager(ret.pText)
+	ret.debugText = newTextMesh(ret.fm, ret.pText)
 	// ui.glsl
 	ret.pUI, err = loadProgram("ui")
 	if err != nil {
@@ -78,6 +84,11 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	}
 	ret.tiles.upload(ret.pUI)
 	ret.tiles.freeMemory()
+	// Axis indicator
+	ret.axis = NewLineMesh()
+	ret.axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
+	ret.axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 1, 0}, [4]uint8{0, 255, 0, 255})
+	ret.axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 0, 1}, [4]uint8{0, 0, 255, 255})
 	return ret, nil
 }
 
@@ -87,6 +98,21 @@ func (a *App) Delete() {
 	a.pRGBFB.delete()
 	a.pCubeMesh.delete()
 	a.pText.delete()
+}
+
+// AddDebugLine sets the debug text drawn in the bottom-left.
+func (a *App) AddDebugLine(f string, args ...any) {
+	a.debugLines = append(a.debugLines, fmt.Sprintf(f, args...))
+}
+
+// updateDebugText updates the debug text mesh.
+func (a *App) updateDebugText() {
+	a.debugText.Reset()
+	y := VirtualScreenHeight - len(a.debugLines)*LineSpacingVS
+	for _, line := range a.debugLines {
+		a.debugText.Print(0, y, line)
+		y += LineSpacingVS
+	}
 }
 
 // SetCursor sets the UI tile to use as the mouse cursor.
@@ -104,11 +130,6 @@ func (a *App) SetCursorPosition(p mgl32.Vec2) {
 	a.cursor.Position = p
 }
 
-// SetCursorVisible sets the visibility of the cursor.
-func (a *App) SetCursorVisible(v bool) {
-	a.drawCursor = v
-}
-
 // SetCrosshair sets the UI tile to use as the 3D crosshair.
 func (a *App) SetCrosshair(f FaceIndex, l uint16) {
 	a.crosshair = a.NewUIMesh()
@@ -118,21 +139,38 @@ func (a *App) SetCrosshair(f FaceIndex, l uint16) {
 	a.crosshair.Layer = l
 }
 
-// SetCrosshairVisible sets the visibility of the crosshair.
-func (a *App) SetCrosshairVisible(v bool) {
-	a.drawCrosshair = v
-}
-
 // AddVoxelMesh adds the voxel mesh to the list to render. The value of o is
 // copied internally, so o may be reused after the call to AddVoxelMesh.
 func (a *App) AddVoxelMesh(m *VoxelMesh, o *Orientation) {
 	a.voxelMeshes = append(a.voxelMeshes, voxelMeshRef{m: m, o: *o})
 }
 
+// RemoveVoxelMesh removes the passed voxel mesh from the renderer.
+func (a *App) RemoveVoxelMesh(m *VoxelMesh) {
+	for i := 0; i < len(a.voxelMeshes); i++ {
+		if a.voxelMeshes[i].m == m {
+			a.voxelMeshes[i] = a.voxelMeshes[len(a.voxelMeshes)-1]
+			a.voxelMeshes = a.voxelMeshes[:len(a.voxelMeshes)]
+			return
+		}
+	}
+}
+
 // AddCubeMesh adds the cube mesh to the list to render. The value of o is
 // copied internally, so o may be reused after the call to AddCubeMesh.
 func (a *App) AddCubeMesh(m *CubeMesh, o *Orientation) {
 	a.cubeMeshes = append(a.cubeMeshes, cubeMeshRef{m: m, o: *o})
+}
+
+// RemoveCubeMesh removes the passed cube mesh from the renderer.
+func (a *App) RemoveCubeMesh(m *CubeMesh) {
+	for i := 0; i < len(a.cubeMeshes); i++ {
+		if a.cubeMeshes[i].m == m {
+			a.cubeMeshes[i] = a.cubeMeshes[len(a.cubeMeshes)-1]
+			a.cubeMeshes = a.cubeMeshes[:len(a.cubeMeshes)]
+			return
+		}
+	}
 }
 
 // NewUIMesh creates and returns a new UIMesh.
@@ -145,6 +183,17 @@ func (a *App) AddUIMesh(m *UIMesh) {
 	a.uiMeshes = append(a.uiMeshes, m)
 }
 
+// RemoveUIMesh removes the passed cube mesh from the renderer.
+func (a *App) RemoveUIMesh(m *UIMesh) {
+	for i := 0; i < len(a.uiMeshes); i++ {
+		if a.uiMeshes[i] == m {
+			a.uiMeshes[i] = a.uiMeshes[len(a.uiMeshes)-1]
+			a.uiMeshes = a.uiMeshes[:len(a.uiMeshes)]
+			return
+		}
+	}
+}
+
 // Draw draws everything with the given camera for 3D space..
 func (a *App) Draw(c *Camera) {
 	// Variable setup
@@ -152,27 +201,36 @@ func (a *App) Draw(c *Camera) {
 		float32(VirtualScreenWidth)/float32(VirtualScreenHeight), 0.1, 1000.0)
 	// Frame setup
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	// TODO REMOVE Draw debug indicators
+	// Draw wire frames
 	a.pRGBFB.use()
 	gl.UniformMatrix4fv(int32(a.pRGBFB.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
-	mt := c.TransformMatrix().Mul4(a.axis.o.TransformMatrix())
+	if a.ChunkBoundsVisible {
+		for _, m := range a.cubeMeshes {
+			mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
+			gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false,
+				&mt[0])
+			m.m.drawAABB(a.pRGBFB)
+		}
+	}
+	mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
 	gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false, &mt[0])
-	a.axis.draw()
+	a.axis.draw(a.pRGBFB)
 	// Draw chunks
 	a.pCubeMesh.use()
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
 	a.faces.bind(a.pCubeMesh)
 	for _, m := range a.cubeMeshes {
-		vm := c.TransformMatrix()
-		mm := m.o.TransformMatrix()
+		// vm := c.TransformMatrix()
+		// mm := m.o.TransformMatrix()
 		// gl.UniformMatrix4fv(a.pCubeMesh.uni("uViewMatrix"), 1, false, &vm[0])
 		// gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelMatrix"), 1, false, &mm[0])
-		mvm := vm.Mul4(mm)
+		// mvm := vm.Mul4(mm)
+		mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
-			&mvm[0])
-		nt := (vm.Mul4(mm)).Inv().Transpose()
+			&mt[0])
+		nt := mt.Inv().Transpose()
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uNormalMatrix"), 1, false, &nt[0])
 		m.m.draw(a.pCubeMesh)
 	}
@@ -200,13 +258,13 @@ func (a *App) Draw(c *Camera) {
 		m.draw()
 	}
 	// Draw common screen components
-	if a.drawCrosshair && a.crosshair != nil {
+	if a.CrosshairVisible && a.crosshair != nil {
 		m := a.crosshair
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
 			float32(m.Layer)/0xFFFF)
 		m.draw()
 	}
-	if a.drawCursor && a.cursor != nil {
+	if a.CursorVisible && a.cursor != nil {
 		m := a.cursor
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
 			float32(m.Layer)/0xFFFF)
@@ -226,4 +284,12 @@ func (a *App) Draw(c *Camera) {
 			float32(m.Layer)/0xFFFF)
 		m.Text.draw()
 	}
+	// Draw debug text on top of everything
+	if a.DebugTextVisible && a.debugText != nil {
+		a.updateDebugText()
+		m := a.debugText
+		gl.Uniform3f(a.pUI.uni("uPosition"), 0, 0, 1.0)
+		m.draw()
+	}
+	a.debugLines = a.debugLines[:0]
 }

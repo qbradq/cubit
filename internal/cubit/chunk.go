@@ -3,17 +3,12 @@ package cubit
 import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/vox"
 )
 
 const ChunkWidth int = 16
 const ChunkHeight int = 16
 const ChunkDepth int = 16
-
-var chunkDimensions = Position{
-	X: ChunkWidth,
-	Y: ChunkHeight,
-	Z: ChunkDepth,
-}
 
 // Cell encodes the cube or vox contained in a single Cell along with the
 // orientation.
@@ -57,10 +52,9 @@ func (l Cell) Decompose() (c *Cube, v *Vox, f c3d.Facing) {
 // Chunk represents a 16x16x16 chunk of space.
 type Chunk struct {
 	pos        Position          // Position representing the global location of the chunk
-	ref        ChunkRef          // Chunk self-reference
+	aabb       vox.AABB          // Bounding box of the chunk
 	o          c3d.Orientation   // Cached orientation value for the chunk
-	solid      Cell              // If cubes is nil, this is the CubeRef the chunk is filled with
-	cubes      []Cell            // All references in the chunk
+	cubes      vox.Chunk[Cell]   // Cells of the chunk
 	mesh       *c3d.CubeMesh     // Mesh object used to build the vbo data for the cube mesh
 	vox        []*Vox            // List of all vox models to draw
 	vos        []c3d.Orientation // List of orientations to use when drawing vox
@@ -68,83 +62,58 @@ type Chunk struct {
 }
 
 // NewChunk creates a new Chunk ready for use.
-func NewChunk(r ChunkRef) *Chunk {
+func NewChunk(p Position) *Chunk {
 	ret := &Chunk{
-		pos:        r.ToPosition(),
-		ref:        r,
-		solid:      CellInvalid,
+		pos:        p,
 		cubesDirty: true,
 	}
 	ret.pos.X *= ChunkWidth
 	ret.pos.Y *= ChunkHeight
 	ret.pos.Z *= ChunkDepth
+	ret.cubes = *vox.NewChunk(ret.pos.X, ret.pos.Y, ret.pos.Z, CellInvalid,
+		CellInvalid)
+	ret.aabb = vox.AABB{
+		Min: mgl32.Vec3{
+			float32(ret.pos.X),
+			float32(ret.pos.Y),
+			float32(ret.pos.Z),
+		},
+		Max: mgl32.Vec3{
+			float32(ret.pos.X + ChunkWidth),
+			float32(ret.pos.Y + ChunkHeight),
+			float32(ret.pos.Z + ChunkDepth),
+		},
+	}
 	ret.o = *c3d.NewOrientation(mgl32.Vec3{
 		float32(ret.pos.X) + float32(ChunkWidth/2),
 		float32(ret.pos.Y) + float32(ChunkHeight/2),
 		float32(ret.pos.Z) + float32(ChunkDepth/2),
 	}, 0, 0, 0)
-	for i := range ret.cubes {
-		ret.cubes[i] = CellInvalid
-	}
 	return ret
 }
 
-// Set sets a cube by reference and facing.
-func (c *Chunk) Set(p Position, r Cell) {
-	if p.X < 0 || p.X >= ChunkWidth ||
-		p.Y < 0 || p.Y >= ChunkHeight ||
-		p.Z < 0 || p.Z >= ChunkDepth {
-		return
+// SetRelative sets a cube by reference and facing.
+func (c *Chunk) SetRelative(p Position, r Cell) {
+	if c.cubes.SetRelative(p.X, p.Y, p.Z, r) {
+		c.cubesDirty = true
 	}
-	if len(c.cubes) == 0 {
-		if r == c.solid {
-			return
-		}
-		c.cubes = make([]Cell, ChunkWidth*ChunkHeight*ChunkDepth)
-		for i := range c.cubes {
-			c.cubes[i] = c.solid
-		}
-	}
-	ofs := p.Y * ChunkWidth * ChunkDepth
-	ofs += p.Z * ChunkDepth
-	ofs += p.X
-	if c.cubes[ofs] == r {
-		return
-	}
-	c.cubes[ofs] = r
-	c.cubesDirty = true
 }
 
 // Fill fills the entire chunk with the given cube reference.
 func (c *Chunk) Fill(r Cell) {
-	if len(c.cubes) == 0 && c.solid == r {
-		return
-	}
-	c.solid = r
-	c.cubes = nil
+	c.cubes.Fill(r)
 	c.cubesDirty = true
 }
 
-// CellAt returns the packed cube reference at the given location.
-func (c *Chunk) CellAt(p Position) Cell {
-	if p.X < 0 || p.X >= ChunkWidth ||
-		p.Y < 0 || p.Y >= ChunkHeight ||
-		p.Z < 0 || p.Z >= ChunkDepth {
-		return CellInvalid
-	}
-	if len(c.cubes) == 0 {
-		return c.solid
-	}
-	ofs := p.Y * ChunkWidth * ChunkDepth
-	ofs += p.Z * ChunkDepth
-	ofs += p.X
-	return c.cubes[ofs]
+// GetRelative returns the packed cube reference at the given location.
+func (c *Chunk) GetRelative(p Position) Cell {
+	return c.cubes.GetRelative(p.X, p.Y, p.Z)
 }
 
 // At returns a pointer to the cube definition or voxel model definition at the
 // given cell.
 func (c *Chunk) At(p Position) (*Cube, *Vox, c3d.Facing) {
-	r := c.CellAt(p)
+	r := c.GetRelative(p)
 	if r == CellInvalid {
 		return nil, nil, c3d.North
 	}
@@ -158,7 +127,8 @@ func (c *Chunk) compile() {
 	var vox *Vox
 	var f c3d.Facing
 	face := func(side c3d.Facing) {
-		cell := c.CellAt(p.Add(PositionOffsets[side]))
+		np := p.Add(PositionOffsets[side])
+		cell := c.cubes.GetRelative(np.X, np.Y, np.Z)
 		nc, _, _ := cell.Decompose()
 		if nc != nil && !nc.Transparent {
 			return
@@ -166,7 +136,7 @@ func (c *Chunk) compile() {
 		c.mesh.AddFace(byte(p.X), byte(p.Y), byte(p.Z), side, cube.Faces[side])
 	}
 	if c.mesh == nil {
-		c.mesh = c3d.NewCubeMesh()
+		c.mesh = c3d.NewCubeMesh(c.aabb)
 	}
 	c.mesh.Reset()
 	c.vox = c.vox[:0]
@@ -174,7 +144,7 @@ func (c *Chunk) compile() {
 	for p.Y = 0; p.Y < ChunkHeight; p.Y++ {
 		for p.Z = 0; p.Z < ChunkDepth; p.Z++ {
 			for p.X = 0; p.X < ChunkWidth; p.X++ {
-				cell := c.CellAt(p)
+				cell := c.GetRelative(p)
 				cube, vox, f = cell.Decompose()
 				if vox != nil {
 					c.vox = append(c.vox, vox)

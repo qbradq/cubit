@@ -1,55 +1,50 @@
 package cubit
 
-import "github.com/qbradq/cubit/internal/c3d"
-
-// ChunkRef is a reference to a chunk in the sparse world structure. It contains
-// the chunk's orientation as signed integers. The least significant 14 bits
-// contains the X coordinate. The next 14 bits the Z coordinate. And the final
-// 4 bits the Y coordinate.
-type ChunkRef uint32
-
-// ToPosition returns the position encoded in the chunk reference.
-func (r ChunkRef) ToPosition() Position {
-	return Position{
-		X: int(r&0x00003FFF) - 0x2000,
-		Z: int((r&0x0FFFC000)>>14) - 0x2000,
-		Y: int((r&0xF0000000)>>28) - 0x8,
-	}
-}
-
-// ChunkRefFromCoords returns the position encoded as a chunk reference.
-func ChunkRefFromCoords(p Position) ChunkRef {
-	return ChunkRef(uint32(p.X+0x2000) |
-		uint32(p.Z+0x2000)<<14 |
-		uint32(p.Y+0x8)<<28)
-}
+import (
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/vox"
+)
 
 // World manages the state of the entire world.
 type World struct {
-	chunks map[ChunkRef]*Chunk // Map of all loaded chunks
+	chunks *vox.OctalTree[*Chunk] // Sparse chunks volume
 }
 
 // NewWorld returns a new World object read for use.
 func NewWorld() *World {
 	return &World{
-		chunks: map[ChunkRef]*Chunk{},
+		chunks: vox.NewOctalTreeRoot[*Chunk](4096),
 	}
 }
 
-// GetChunkByRef returns the chunk by reference.
-func (w *World) GetChunkByRef(r ChunkRef) *Chunk {
-	c, found := w.chunks[r]
-	if !found {
-		c = w.generateChunk(r)
-		w.chunks[r] = c
+// GetChunk returns the chunk in chunk coordinates.
+func (w *World) GetChunk(p Position) *Chunk {
+	v := mgl32.Vec3{float32(p.X), float32(p.Y), float32(p.Z)}
+	c := w.chunks.Get(v)
+	if c == nil {
+		c = w.generateChunk(p)
+		w.chunks.Set(v, c)
 	}
 	return c
 }
 
-// generateChunk generates the for the given chunk reference and returns it.
-func (w *World) generateChunk(r ChunkRef) *Chunk {
-	ret := NewChunk(r)
-	p := r.ToPosition()
+// GetChunkForPosition returns the chunk in world coordinates.
+func (w *World) GetChunkForPosition(p Position) *Chunk {
+	v := mgl32.Vec3{float32(p.X / ChunkWidth), float32(p.Y / ChunkHeight),
+		float32(p.Z / ChunkDepth)}
+	c := w.chunks.Get(v)
+	if c == nil {
+		c = w.generateChunk(p)
+		w.chunks.Set(v, c)
+	}
+	return c
+}
+
+// generateChunk generates the chunk for the given chunk coordinates and
+// returns it.
+func (w *World) generateChunk(p Position) *Chunk {
+	ret := NewChunk(p)
 	n := c3d.North
 	// For now we just hard-code the chunk generation.
 	rDirt := CubeDefsIndex("/cubit/dirt")
@@ -66,9 +61,9 @@ func (w *World) generateChunk(r ChunkRef) *Chunk {
 			for iz := 0; iz < ChunkDepth; iz++ {
 				for ix := 0; ix < ChunkWidth; ix++ {
 					if iy < 11 {
-						ret.Set(Pos(ix, iy, iz), CellForCube(rDirt, n))
+						ret.SetRelative(Pos(ix, iy, iz), CellForCube(rDirt, n))
 					} else if iy == 11 {
-						ret.Set(Pos(ix, iy, iz), CellForCube(rGrass, n))
+						ret.SetRelative(Pos(ix, iy, iz), CellForCube(rGrass, n))
 					}
 				}
 			}
@@ -76,25 +71,25 @@ func (w *World) generateChunk(r ChunkRef) *Chunk {
 		// Dirt house at origin
 		if p.X == 0 && p.Z == 0 {
 			for ix := 5; ix <= 11; ix++ {
-				ret.Set(Pos(ix, 12, 9), CellForCube(rDirt, c3d.North))
-				ret.Set(Pos(ix, 13, 9), CellForCube(rDirt, c3d.North))
+				ret.SetRelative(Pos(ix, 12, 9), CellForCube(rDirt, c3d.North))
+				ret.SetRelative(Pos(ix, 13, 9), CellForCube(rDirt, c3d.North))
 				if ix == 9 {
-					ret.Set(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
-					ret.Set(Pos(ix, 13, 5), CellForVox(GetVoxByPath("/cubit/window0").Ref, c3d.North))
+					ret.SetRelative(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
+					ret.SetRelative(Pos(ix, 13, 5), CellForVox(GetVoxByPath("/cubit/window0").Ref, c3d.North))
 				} else if ix != 7 {
-					ret.Set(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
-					ret.Set(Pos(ix, 13, 5), CellForCube(rDirt, c3d.North))
+					ret.SetRelative(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
+					ret.SetRelative(Pos(ix, 13, 5), CellForCube(rDirt, c3d.North))
 				}
 			}
 			for iz := 6; iz <= 8; iz++ {
-				ret.Set(Pos(5, 12, iz), CellForCube(rDirt, c3d.North))
-				ret.Set(Pos(5, 13, iz), CellForCube(rDirt, c3d.North))
-				ret.Set(Pos(11, 12, iz), CellForCube(rDirt, c3d.North))
-				ret.Set(Pos(11, 13, iz), CellForCube(rDirt, c3d.North))
+				ret.SetRelative(Pos(5, 12, iz), CellForCube(rDirt, c3d.North))
+				ret.SetRelative(Pos(5, 13, iz), CellForCube(rDirt, c3d.North))
+				ret.SetRelative(Pos(11, 12, iz), CellForCube(rDirt, c3d.North))
+				ret.SetRelative(Pos(11, 13, iz), CellForCube(rDirt, c3d.North))
 			}
 			for iz := 5; iz <= 9; iz++ {
 				for ix := 5; ix <= 11; ix++ {
-					ret.Set(Pos(ix, 14, iz), CellForCube(rDirt, c3d.North))
+					ret.SetRelative(Pos(ix, 14, iz), CellForCube(rDirt, c3d.North))
 				}
 			}
 		}
@@ -104,6 +99,5 @@ func (w *World) generateChunk(r ChunkRef) *Chunk {
 
 // SetCell sets the cube and facing at the given position in the world.
 func (w *World) SetCell(p Position, c Cell, f c3d.Facing) {
-	w.GetChunkByRef(ChunkRefFromCoords(p.Div(chunkDimensions))).Set(
-		p.Mod(chunkDimensions), c)
+	w.GetChunkForPosition(p).cubes.Set(p.X, p.Y, p.Z, c)
 }

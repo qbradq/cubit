@@ -2,6 +2,7 @@ package c3d
 
 import (
 	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/qbradq/cubit/internal/vox"
 )
 
 const pixelScale = float32(1) / float32(16)
@@ -10,19 +11,22 @@ const invalidVBO = 0xFFFFFFFF
 
 // CubeMesh is a utility struct that builds cube-based meshes.
 type CubeMesh struct {
-	vao        uint32  // Vertex Array Object ID
-	vbo        uint32  // Vertex Buffer Object ID
-	count      int32   // Vertex count
-	vboCurrent bool    // If false, the VBO needs to be reuploaded.
-	d          []byte  // Raw mesh data
-	vbuf       [8]byte // Vertex data buffer
+	AABB       vox.AABB  // AABB for the mesh
+	aabbMesh   *LineMesh // Bounding box mesh
+	vao        uint32    // Vertex Array Object ID
+	vbo        uint32    // Vertex Buffer Object ID
+	count      int32     // Vertex count
+	vboCurrent bool      // If false, the VBO needs to be reuploaded.
+	d          []byte    // Raw mesh data
+	vbuf       [8]byte   // Vertex data buffer
 }
 
 // NewCubeMesh constructs a new CubeMesh object ready for use.
-func NewCubeMesh() *CubeMesh {
+func NewCubeMesh(aabb vox.AABB) *CubeMesh {
 	ret := &CubeMesh{
-		vao: invalidVAO,
-		vbo: invalidVBO,
+		AABB: aabb,
+		vao:  invalidVAO,
+		vbo:  invalidVBO,
 	}
 	return ret
 }
@@ -100,4 +104,13 @@ func (m *CubeMesh) draw(p *program) {
 	gl.BindVertexArray(m.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
 	gl.BindVertexArray(0)
+}
+
+// drawAABB draws the axis-aligned bounding box of this mesh.
+func (m *CubeMesh) drawAABB(prg *program) {
+	if m.aabbMesh == nil {
+		m.aabbMesh = NewLineMesh()
+		m.aabbMesh.WireFrame(m.AABB.Lines(), [4]uint8{0, 255, 0, 255})
+	}
+	m.aabbMesh.draw(prg)
 }
