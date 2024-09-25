@@ -58,6 +58,7 @@ func NewWorld() *World {
 
 // TODO DEBUG REMOVE
 func (w *World) TestGen() {
+	rStone := GetCubeDef("/cubit/stone")
 	rGrass := GetCubeDef("/cubit/grass")
 	rect := func(min, max [3]int, r Cell) {
 		for iy := min[1]; iy <= max[1]; iy++ {
@@ -68,7 +69,19 @@ func (w *World) TestGen() {
 			}
 		}
 	}
+	// Ground
 	rect([3]int{0, 0, 0}, [3]int{15, 0, 15}, CellForCube(rGrass, c3d.North))
+	// Walls
+	rect([3]int{4, 1, 4}, [3]int{4, 3, 10}, CellForCube(rStone, c3d.North))
+	rect([3]int{10, 1, 4}, [3]int{10, 3, 10}, CellForCube(rStone, c3d.North))
+	rect([3]int{4, 1, 4}, [3]int{10, 3, 4}, CellForCube(rStone, c3d.North))
+	rect([3]int{4, 1, 10}, [3]int{10, 3, 10}, CellForCube(rStone, c3d.North))
+	// Ceiling
+	rect([3]int{4, 4, 4}, [3]int{10, 4, 10}, CellForCube(rStone, c3d.North))
+	// Window and doorway
+	w.SetCell(Pos(6, 1, 10), CellInvalid)
+	w.SetCell(Pos(6, 2, 10), CellInvalid)
+	w.SetCell(Pos(8, 2, 10), CellInvalid)
 }
 
 // SetCell sets the cube and facing at the given position in the world.

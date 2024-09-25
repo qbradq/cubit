@@ -46,6 +46,7 @@ func Main() {
 		panic(err)
 	}
 	win.MakeContextCurrent()
+	win.SetPos(0, 0)
 	// Load mods
 	if err := cubit.ReloadModInfo(); err != nil {
 		panic(err)

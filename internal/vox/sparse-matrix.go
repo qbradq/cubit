@@ -43,6 +43,11 @@ func (p *SparseMatrix[T]) IsEmpty() bool {
 
 // Get returns the value at the given global coordinates.
 func (p *SparseMatrix[T]) Get(x, y, z int) T {
+	ofs := int(math.Pow(16, float64(p.level+1))) / 2
+	return p.get(x+ofs, y+ofs, z+ofs)
+}
+
+func (p *SparseMatrix[T]) get(x, y, z int) T {
 	if p.IsEmpty() {
 		return p.zero
 	}
@@ -53,9 +58,9 @@ func (p *SparseMatrix[T]) Get(x, y, z int) T {
 	sx := (x - p.pos[0]) / s
 	sy := (y - p.pos[1]) / s
 	sz := (z - p.pos[2]) / s
-	if sx < 0 || sx > 15 || sy < 0 || sy > 15 || sz < 0 || sz > 15 {
-		return p.zero
-	}
+	sx &= 0xF
+	sy &= 0xF
+	sz &= 0xF
 	i := sy*16*16 + sz*16 + sx
 	if p.level == 0 {
 		if len(p.leaves) == 0 {
@@ -67,19 +72,24 @@ func (p *SparseMatrix[T]) Get(x, y, z int) T {
 		if c == nil {
 			return p.zero
 		}
-		return c.Get(x, y, z)
+		return c.get(x, y, z)
 	}
 }
 
 // Set sets the value at the given global coordinates.
 func (p *SparseMatrix[T]) Set(x, y, z int, v T) {
+	ofs := int(math.Pow(16, float64(p.level+1))) / 2
+	p.set(x+ofs, y+ofs, z+ofs, v)
+}
+
+func (p *SparseMatrix[T]) set(x, y, z int, v T) {
 	s := int(math.Pow(16, float64(p.level)))
 	sx := (x - p.pos[0]) / s
 	sy := (y - p.pos[1]) / s
 	sz := (z - p.pos[2]) / s
-	if sx < 0 || sx > 15 || sy < 0 || sy > 15 || sz < 0 || sz > 15 {
-		return
-	}
+	sx &= 0xF
+	sy &= 0xF
+	sz &= 0xF
 	i := sy*16*16 + sz*16 + sx
 	if p.level == 0 {
 		if p.isSolid && p.solid == v {
@@ -105,5 +115,5 @@ func (p *SparseMatrix[T]) Set(x, y, z int, v T) {
 	if p.bcp[i] == nil {
 		p.bcp[i] = NewSparseMatrix(p.level-1, p.zero)
 	}
-	p.bcp[i].Set(x, y, z, v)
+	p.bcp[i].set(x, y, z, v)
 }

@@ -33,7 +33,7 @@ varying vec2 uv;
 const vec3 ambientLightColor = vec3(1.0, 1.0, 1.0);
 const float ambientIntensity = 0.5;
 const vec3 diffuseLightColor = vec3(1.0, 1.0, 1.0);
-const vec3 lightDirection = normalize(vec3(1.0, 1.0, 1.0));
+const vec3 lightDirection = normalize(vec3(0.5, 0.7, 0.0));
 
 void main() {
     vec3 color = texture2D(uAtlas, uv).rgb;
