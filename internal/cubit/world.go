@@ -1,103 +1,82 @@
 package cubit
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
 	"github.com/qbradq/cubit/internal/vox"
 )
 
+// Cell encodes the cube or vox contained in a single Cell along with the
+// orientation.
+type Cell uint32
+
+// CellInvalid is the invalid valid for cells.
+const CellInvalid Cell = 0xFFFFFFFF
+
+// CellForCube returns the cell value with the given values encoded.
+func CellForCube(r CubeRef, f c3d.Facing) Cell {
+	return Cell(r) | (Cell(f) << 16)
+}
+
+// CellForVox returns the cell value with the given values encoded.
+func CellForVox(r VoxRef, f c3d.Facing) Cell {
+	return Cell(r) | (Cell(f) << 16) | 0x80000000
+}
+
+// Decompose returns the portions of the cell value broken out.
+func (l Cell) Decompose() (c *Cube, v *Vox, f c3d.Facing) {
+	f = c3d.Facing((l >> 16) & 0x7)
+	if f > c3d.Bottom {
+		f = 0
+	}
+	c = nil
+	v = nil
+	if l&0x80000000 == 0 {
+		ref := CubeRef(l & 0xFFFF)
+		if ref != CubeRefInvalid {
+			c = cubeDefs[ref]
+		}
+	} else {
+		ref := VoxRef(l & 0xFFFF)
+		if ref != VoxRefInvalid {
+			v = voxDefs[ref]
+		}
+	}
+	return
+}
+
 // World manages the state of the entire world.
 type World struct {
-	chunks *vox.OctalTree[*Chunk] // Sparse chunks volume
+	sm *vox.SparseMatrix[Cell] // Matrix of all cells
 }
 
 // NewWorld returns a new World object read for use.
 func NewWorld() *World {
 	return &World{
-		chunks: vox.NewOctalTreeRoot[*Chunk](4096),
+		sm: vox.NewSparseMatrix(3, CellInvalid),
 	}
 }
 
-// GetChunk returns the chunk in chunk coordinates.
-func (w *World) GetChunk(p Position) *Chunk {
-	v := mgl32.Vec3{float32(p.X), float32(p.Y), float32(p.Z)}
-	c := w.chunks.Get(v)
-	if c == nil {
-		c = w.generateChunk(p)
-		w.chunks.Set(v, c)
-	}
-	return c
-}
-
-// GetChunkForPosition returns the chunk in world coordinates.
-func (w *World) GetChunkForPosition(p Position) *Chunk {
-	v := mgl32.Vec3{float32(p.X / ChunkWidth), float32(p.Y / ChunkHeight),
-		float32(p.Z / ChunkDepth)}
-	c := w.chunks.Get(v)
-	if c == nil {
-		c = w.generateChunk(p)
-		w.chunks.Set(v, c)
-	}
-	return c
-}
-
-// generateChunk generates the chunk for the given chunk coordinates and
-// returns it.
-func (w *World) generateChunk(p Position) *Chunk {
-	ret := NewChunk(p)
-	n := c3d.North
-	// For now we just hard-code the chunk generation.
-	rDirt := CubeDefsIndex("/cubit/dirt")
-	rGrass := CubeDefsIndex("/cubit/grass")
-	if p.Y < 0 {
-		ret.Fill(CellForCube(rDirt, n))
-	}
-	if p.Y > 0 {
-		ret.Fill(CellInvalid)
-	}
-	if p.Y == 0 {
-		// Flat
-		for iy := 0; iy < ChunkHeight; iy++ {
-			for iz := 0; iz < ChunkDepth; iz++ {
-				for ix := 0; ix < ChunkWidth; ix++ {
-					if iy < 11 {
-						ret.SetRelative(Pos(ix, iy, iz), CellForCube(rDirt, n))
-					} else if iy == 11 {
-						ret.SetRelative(Pos(ix, iy, iz), CellForCube(rGrass, n))
-					}
-				}
-			}
-		}
-		// Dirt house at origin
-		if p.X == 0 && p.Z == 0 {
-			for ix := 5; ix <= 11; ix++ {
-				ret.SetRelative(Pos(ix, 12, 9), CellForCube(rDirt, c3d.North))
-				ret.SetRelative(Pos(ix, 13, 9), CellForCube(rDirt, c3d.North))
-				if ix == 9 {
-					ret.SetRelative(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
-					ret.SetRelative(Pos(ix, 13, 5), CellForVox(GetVoxByPath("/cubit/window0").Ref, c3d.North))
-				} else if ix != 7 {
-					ret.SetRelative(Pos(ix, 12, 5), CellForCube(rDirt, c3d.North))
-					ret.SetRelative(Pos(ix, 13, 5), CellForCube(rDirt, c3d.North))
-				}
-			}
-			for iz := 6; iz <= 8; iz++ {
-				ret.SetRelative(Pos(5, 12, iz), CellForCube(rDirt, c3d.North))
-				ret.SetRelative(Pos(5, 13, iz), CellForCube(rDirt, c3d.North))
-				ret.SetRelative(Pos(11, 12, iz), CellForCube(rDirt, c3d.North))
-				ret.SetRelative(Pos(11, 13, iz), CellForCube(rDirt, c3d.North))
-			}
-			for iz := 5; iz <= 9; iz++ {
-				for ix := 5; ix <= 11; ix++ {
-					ret.SetRelative(Pos(ix, 14, iz), CellForCube(rDirt, c3d.North))
+// TODO DEBUG REMOVE
+func (w *World) TestGen() {
+	rGrass := GetCubeDef("/cubit/grass")
+	rect := func(min, max [3]int, r Cell) {
+		for iy := min[1]; iy <= max[1]; iy++ {
+			for iz := min[2]; iz <= max[2]; iz++ {
+				for ix := min[0]; ix <= max[0]; ix++ {
+					w.SetCell(Pos(ix, iy, iz), r)
 				}
 			}
 		}
 	}
-	return ret
+	rect([3]int{0, 0, 0}, [3]int{15, 0, 15}, CellForCube(rGrass, c3d.North))
 }
 
 // SetCell sets the cube and facing at the given position in the world.
-func (w *World) SetCell(p Position, c Cell, f c3d.Facing) {
-	w.GetChunkForPosition(p).cubes.Set(p.X, p.Y, p.Z, c)
+func (w *World) SetCell(p Position, r Cell) {
+	w.sm.Set(p.X, p.Y, p.Z, r)
+}
+
+// GetCell returns the cell value at the given position in the world.
+func (w *World) GetCell(p Position) Cell {
+	return w.sm.Get(p.X, p.Y, p.Z)
 }

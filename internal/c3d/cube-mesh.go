@@ -5,7 +5,6 @@ import (
 	"github.com/qbradq/cubit/internal/vox"
 )
 
-const pixelScale = float32(1) / float32(16)
 const invalidVAO = 0xFFFFFFFF
 const invalidVBO = 0xFFFFFFFF
 

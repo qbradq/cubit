@@ -16,8 +16,8 @@ type CubeRef uint16
 // CubeRefInvalid is the invalid value for CubeRef types.
 const CubeRefInvalid CubeRef = 0xFFFF
 
-// CubeDefsIndex returns the CubeRef assigned to the given id.
-func CubeDefsIndex(id string) CubeRef {
+// GetCubeDef returns the CubeRef assigned to the given id.
+func GetCubeDef(id string) CubeRef {
 	c, found := cubeDefsById[id]
 	if !found {
 		return CubeRefInvalid

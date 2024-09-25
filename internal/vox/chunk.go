@@ -1,6 +1,6 @@
 package vox
 
-// Chunk manages a 16x16x16 dense matrix of values.
+// Chunk manages a 16x16x16 dense matrix of 32-bit values.
 type Chunk[T comparable] struct {
 	x, y, z int             // Volume bottom-north-west corner
 	v       [16 * 16 * 16]T // Matrix of values
