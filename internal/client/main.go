@@ -79,7 +79,6 @@ func Main() {
 	app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
 	app.CrosshairVisible = true
 	app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
-	app.CursorVisible = true
 	app.ChunkBoundsVisible = true
 	// World setup
 	world := cubit.NewWorld()
@@ -87,7 +86,7 @@ func Main() {
 	chunk := NewChunk(cubit.Pos(0, 0, 0))
 	chunk.Add(world, app)
 	// cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
-	cam := c3d.NewCamera(mgl32.Vec3{7, 5, 7})
+	cam := c3d.NewCamera(mgl32.Vec3{7, 3, 7})
 	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	// Main loop
 	lastFrame := glfw.GetTime()

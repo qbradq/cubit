@@ -8,8 +8,6 @@ import (
 	"github.com/qbradq/cubit/internal/util"
 )
 
-var voxBuilder = c3d.NewVoxBuilder()
-
 // ftd is the facing to orientation table.
 var ftd = [6]*c3d.Orientation{
 	c3d.NewOrientation(mgl32.Vec3{0, 0, 0}, 0, 0, 0),
@@ -58,7 +56,7 @@ var voxDefs = []*Vox{}
 // NewVox creates a new Vox object ready to use.
 func NewVox(v *util.Vox) *Vox {
 	return &Vox{
-		mesh:   voxBuilder.BuildVoxelMesh(v.Voxels, v.Width, v.Height, v.Depth),
+		mesh:   c3d.BuildVoxelMesh(v.Voxels, v.Width, v.Height, v.Depth),
 		width:  v.Width,
 		height: v.Height,
 		depth:  v.Depth,

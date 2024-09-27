@@ -1,18 +1,40 @@
 package c3d
 
-// VoxBuilder manages memory buffers used for building optimized vox images.
-type VoxBuilder struct {
-}
-
-// NewVoxBuilder returns a new VoxBuilder ready for use.
-func NewVoxBuilder() *VoxBuilder {
-	return &VoxBuilder{}
+var bvmSliceDims = [6][3]int{
+	{1, 1, 0},
+	{1, 1, 0},
+	{0, 1, 1},
+	{0, 1, 1},
+	{1, 0, 1},
+	{1, 0, 1},
 }
 
 // BuildVoxelMesh builds a VoxelMesh object from the passed voxel data.
-func (g *VoxBuilder) BuildVoxelMesh(voxels [][4]uint8,
+func BuildVoxelMesh(voxels [][4]uint8,
 	width, height, depth int) *VoxelMesh {
 	ret := NewVoxelMesh()
+	z21 := func(a, b, c int) (int, int, int) {
+		if a == 0 {
+			a = 1
+		}
+		if b == 0 {
+			b = 1
+		}
+		if c == 0 {
+			c = 1
+		}
+		return a, b, c
+	}
+	var slices [6][][4]uint8
+	for i := range slices {
+		sd := bvmSliceDims[i]
+		w, h, d := z21(width*sd[0], height*sd[1], depth*sd[2])
+		slices[i] = make([][4]uint8, w*h*d)
+	}
+	addSlice := func(pos [3]int, f Facing, c [4]uint8) {
+		p := [3]uint8{uint8(pos[0]), uint8(pos[1]), uint8(pos[2])}
+		ret.AddFace(p, f, c)
+	}
 	face := func(pos [3]int, f Facing, c [4]uint8) {
 		transparent := false
 		np := [3]int{}
@@ -30,9 +52,8 @@ func (g *VoxBuilder) BuildVoxelMesh(voxels [][4]uint8,
 			idx += np[0]
 			transparent = voxels[idx][3] < 255
 		}
-		p := [3]uint8{uint8(pos[0]), uint8(pos[1]), uint8(pos[2])}
 		if transparent {
-			ret.AddFace(p, f, c)
+			addSlice(pos, f, c)
 		}
 	}
 	// Visible face only build
