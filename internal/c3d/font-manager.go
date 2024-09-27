@@ -5,7 +5,7 @@ import (
 	"image/draw"
 	"log"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/golang/freetype/truetype"
 	"github.com/qbradq/cubit/data"
 	"golang.org/x/image/font"

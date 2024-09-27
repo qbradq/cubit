@@ -3,7 +3,7 @@ package c3d
 import (
 	"encoding/binary"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 )
 
 // VirtualScreenGlyphsWide is the width of the screen in glyphs.

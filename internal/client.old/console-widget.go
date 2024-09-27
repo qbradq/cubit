@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/mitchellh/go-wordwrap"
-	"github.com/qbradq/cubit/internal/c3d"
 )
 
 const conLines int = 1024
@@ -27,23 +25,23 @@ type consoleWidget struct {
 }
 
 // newConsoleWidget creates a new console widget and returns it.
-func newConsoleWidget(app *c3d.App) *consoleWidget {
-	ret := &consoleWidget{
-		baseWidget: *newBaseWidget(app),
-		lines:      make([]string, conLines),
-	}
-	ret.Layer = layerConsole
-	ret.cp = len(ret.prompt)
-	// Setup UI
-	ret.NinePatch(0, 0,
-		c3d.VirtualScreenWidth, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
-		npWindow)
-	ret.NinePatch(0, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
-		c3d.VirtualScreenWidth, c3d.CellDimsVS*3,
-		npWindow)
-	ret.Position = mgl32.Vec2{0, -float32(c3d.VirtualScreenHeight)}
-	return ret
-}
+// func newConsoleWidget(app *c3d.App) *consoleWidget {
+// 	ret := &consoleWidget{
+// 		baseWidget: *newBaseWidget(app),
+// 		lines:      make([]string, conLines),
+// 	}
+// 	ret.Layer = layerConsole
+// 	ret.cp = len(ret.prompt)
+// 	// Setup UI
+// 	ret.NinePatch(0, 0,
+// 		c3d.VirtualScreenWidth, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
+// 		npWindow)
+// 	ret.NinePatch(0, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
+// 		c3d.VirtualScreenWidth, c3d.CellDimsVS*3,
+// 		npWindow)
+// 	ret.Position = mgl32.Vec2{0, -float32(c3d.VirtualScreenHeight)}
+// 	return ret
+// }
 
 // printf add log lines to the console.
 func (w *consoleWidget) printf(fm string, args ...any) {
@@ -72,9 +70,9 @@ func (w *consoleWidget) stepVisibility() {
 	}
 	switch w.vis {
 	case 0:
-		w.Position[1] = -float32(c3d.VirtualScreenHeight)
+		// w.Position[1] = -float32(c3d.VirtualScreenHeight)
 	case 1:
-		w.Position[1] = -float32(c3d.VirtualScreenHeight / 2)
+		// w.Position[1] = -float32(c3d.VirtualScreenHeight / 2)
 	case 2:
 		w.Position[1] = 0
 	}
@@ -91,19 +89,19 @@ func (w *consoleWidget) drawText() {
 	if li < 0 {
 		li = conLines - 1
 	}
-	p := [2]int{c3d.CellDimsVS, c3d.CellDimsVS * conHeight}
-	for {
-		if p[1] < c3d.CellDimsVS {
-			break
-		}
-		line := w.lines[li]
-		w.Text.Print(p[0], p[1], line)
-		li--
-		if li < 0 {
-			li = conLines - 1
-		}
-		p[1] -= c3d.LineSpacingVS
-	}
+	// p := [2]int{c3d.CellDimsVS, c3d.CellDimsVS * conHeight}
+	// for {
+	// 	if p[1] < c3d.CellDimsVS {
+	// 		break
+	// 	}
+	// 	line := w.lines[li]
+	// 	w.Text.Print(p[0], p[1], line)
+	// 	li--
+	// 	if li < 0 {
+	// 		li = conLines - 1
+	// 	}
+	// 	p[1] -= c3d.LineSpacingVS
+	// }
 	// Adjust prompt offset
 	l := w.po
 	c := w.cp
@@ -118,11 +116,11 @@ func (w *consoleWidget) drawText() {
 	if len(prompt) >= conWidth {
 		prompt = prompt[:conWidth]
 	}
-	p[1] = c3d.CellDimsVS * (conHeight + 3)
-	w.Text.Print(p[0], p[1], prompt)
-	// Draw caret
-	p[0] = c3d.CellDimsVS * ((c - l) + 1)
-	w.Text.Print(p[0], p[1], "_")
+	// p[1] = c3d.CellDimsVS * (conHeight + 3)
+	// w.Text.Print(p[0], p[1], prompt)
+	// // Draw caret
+	// p[0] = c3d.CellDimsVS * ((c - l) + 1)
+	// w.Text.Print(p[0], p[1], "_")
 }
 
 // update implements the widget interface.

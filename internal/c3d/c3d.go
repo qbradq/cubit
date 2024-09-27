@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -16,7 +16,7 @@ const VirtualScreenHeight int = 180
 
 // NinePatch describes the resources used to generate an arbitrarily sized
 // rectangle skinned with nine tiles stretched over the area.
-type NinePatch [9]FaceIndex
+// type NinePatch [9]FaceIndex
 
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.
 type Facing uint8

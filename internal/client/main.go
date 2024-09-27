@@ -1,14 +1,14 @@
 package client
 
 import (
+	"log"
 	"runtime"
-	"time"
+	"unsafe"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
-	"github.com/qbradq/cubit/internal/cubit"
 )
 
 // Configuration variables
@@ -21,11 +21,11 @@ var screenWidth int = 1280 // Width of the screen in pixels
 var screenHeight int = 720 // Height of the screen in pixels
 var win *glfw.Window       // GLFW window
 var app *c3d.App           // Graphics application
-var console *consoleWidget // Console widget
-var input *Input           // Input instance
+// var console *consoleWidget // Console widget
+var input *Input // Input instance
 
 // UI globals
-var npWindow c3d.NinePatch
+// var npWindow c3d.NinePatch
 
 func init() {
 	runtime.LockOSThread()
@@ -39,8 +39,11 @@ func Main() {
 	}
 	defer glfw.Terminate()
 	glfw.WindowHint(glfw.Resizable, glfw.True)
-	glfw.WindowHint(glfw.ContextVersionMajor, 2)
-	glfw.WindowHint(glfw.ContextVersionMinor, 0)
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
+	glfw.WindowHint(glfw.ContextVersionMinor, 6)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+	glfw.WindowHint(glfw.OpenGLDebugContext, glfw.True)
 	win, err = glfw.CreateWindow(screenWidth, screenHeight, "Cubit", nil, nil)
 	if err != nil {
 		panic(err)
@@ -48,45 +51,45 @@ func Main() {
 	win.MakeContextCurrent()
 	win.SetPos(0, 0)
 	// Load mods
-	if err := cubit.ReloadModInfo(); err != nil {
-		panic(err)
-	}
-	if err := cubit.LoadMods("cubit", "town"); err != nil {
-		panic(err)
-	}
+	// if err := cubit.ReloadModInfo(); err != nil {
+	// 	panic(err)
+	// }
+	// if err := cubit.LoadMods("cubit", "town"); err != nil {
+	// 	panic(err)
+	// }
 	// OpenGL initialization
 	app, err = glInit()
 	if err != nil {
 		panic(err)
 	}
-	defer app.Delete()
+	// defer app.Delete()
 	// Globals init
-	npWindow = c3d.NinePatch{
-		cubit.GetUITile("/cubit/000"),
-		cubit.GetUITile("/cubit/001"),
-		cubit.GetUITile("/cubit/002"),
-		cubit.GetUITile("/cubit/010"),
-		cubit.GetUITile("/cubit/011"),
-		cubit.GetUITile("/cubit/012"),
-		cubit.GetUITile("/cubit/020"),
-		cubit.GetUITile("/cubit/021"),
-		cubit.GetUITile("/cubit/022"),
-	}
+	// npWindow = c3d.NinePatch{
+	// 	cubit.GetUITile("/cubit/000"),
+	// 	cubit.GetUITile("/cubit/001"),
+	// 	cubit.GetUITile("/cubit/002"),
+	// 	cubit.GetUITile("/cubit/010"),
+	// 	cubit.GetUITile("/cubit/011"),
+	// 	cubit.GetUITile("/cubit/012"),
+	// 	cubit.GetUITile("/cubit/020"),
+	// 	cubit.GetUITile("/cubit/021"),
+	// 	cubit.GetUITile("/cubit/022"),
+	// }
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
-	console = newConsoleWidget(app)
-	console.printf("%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
-	console.add(app)
-	app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
-	app.CrosshairVisible = true
-	app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
-	app.ChunkBoundsVisible = true
+	// console = newConsoleWidget(app)
+	// console.printf("%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
+	// console.add(app)
+	// app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
+	// app.CrosshairVisible = true
+	// app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
+	// app.ChunkBoundsVisible = true
 	// World setup
-	world := cubit.NewWorld()
-	world.TestGen()
-	chunk := NewChunk(cubit.Pos(0, 0, 0))
-	chunk.Add(world, app)
+	// world := cubit.NewWorld()
+	// world.TestGen()
+	// chunk := NewChunk(cubit.Pos(0, 0, 0))
+	// chunk.Add(world, app)
 	// cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
-	cam := c3d.NewCamera(mgl32.Vec3{7, 3, 7})
+	// cam := c3d.NewCamera(mgl32.Vec3{7, 3, 7})
 	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	// Main loop
 	lastFrame := glfw.GetTime()
@@ -98,24 +101,25 @@ func Main() {
 		currentFrame := glfw.GetTime()
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
-		console.update()
+		// console.update()
 		// Handle input
 		if input.WasPressed("debug") {
 			app.DebugTextVisible = !app.DebugTextVisible
 		}
-		if console.isFocused() {
-			console.input()
-		} else {
-			cameraInput(cam)
-		}
+		// if console.isFocused() {
+		// 	console.input()
+		// } else {
+		//  cameraInput(cam)
+		// }
 		// TODO REMOVE
-		app.AddDebugLine("Position: X=%d Y=%d Z=%d",
-			int(cam.Position[0]),
-			int(cam.Position[1]),
-			int(cam.Position[2]),
-		)
+		// app.AddDebugLine("Position: X=%d Y=%d Z=%d",
+		// 	int(cam.Position[0]),
+		// 	int(cam.Position[1]),
+		// 	int(cam.Position[2]),
+		// )
+		app.AddDebugLine("Hello, 4.6-core!")
 		// Draw
-		app.Draw(cam)
+		app.Draw( /*cam*/ )
 		// Finish the frame
 		win.SwapBuffers()
 	}
@@ -125,6 +129,7 @@ func glInit() (*c3d.App, error) {
 	if err := gl.Init(); err != nil {
 		return nil, err
 	}
+	gl.DebugMessageCallback(debugMessageHandler, nil)
 	gl.ClearColor(0, 0.5, 1, 0.0)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
@@ -135,44 +140,54 @@ func glInit() (*c3d.App, error) {
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	gl.FrontFace(gl.CW)
-	return c3d.NewApp(cubit.Faces, cubit.UITiles)
+	var d int32
+	gl.GetIntegerv(gl.MAX_ARRAY_TEXTURE_LAYERS, &d)
+	log.Println("MAX_ARRAY_TEXTURE_LAYERS=", d)
+	gl.GetIntegerv(gl.MAX_3D_TEXTURE_SIZE, &d)
+	log.Println("MAX_3D_TEXTURE_SIZE=", d)
+	return c3d.NewApp( /*cubit.Faces, cubit.UITiles*/ )
 }
 
-func cameraInput(cam *c3d.Camera) {
-	speed := walkSpeed * dt
-	if input.IsPressed("forward") {
-		dir := cam.Front
-		dir[1] = 0
-		dir = dir.Normalize().Mul(speed)
-		cam.Position = cam.Position.Add(dir)
-	}
-	if input.IsPressed("backward") {
-		dir := cam.Front
-		dir[1] = 0
-		dir = dir.Normalize().Mul(speed)
-		cam.Position = cam.Position.Sub(dir)
-	}
-	if input.IsPressed("left") {
-		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	}
-	if input.IsPressed("right") {
-		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	}
-	if input.IsPressed("up") {
-		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
-	}
-	if input.IsPressed("down") {
-		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
-	}
-	if input.WasPressed("console") {
-		console.stepVisibility()
-	}
-	cam.Yaw += input.CursorDelta[0] * mouseSensitivity
-	cam.Pitch += input.CursorDelta[1] * mouseSensitivity
-	if cam.Pitch > 89 {
-		cam.Pitch = 89
-	}
-	if cam.Pitch < -89 {
-		cam.Pitch = -89
-	}
+// func cameraInput(cam *c3d.Camera) {
+// 	speed := walkSpeed * dt
+// 	if input.IsPressed("forward") {
+// 		dir := cam.Front
+// 		dir[1] = 0
+// 		dir = dir.Normalize().Mul(speed)
+// 		cam.Position = cam.Position.Add(dir)
+// 	}
+// 	if input.IsPressed("backward") {
+// 		dir := cam.Front
+// 		dir[1] = 0
+// 		dir = dir.Normalize().Mul(speed)
+// 		cam.Position = cam.Position.Sub(dir)
+// 	}
+// 	if input.IsPressed("left") {
+// 		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+// 	}
+// 	if input.IsPressed("right") {
+// 		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+// 	}
+// 	if input.IsPressed("up") {
+// 		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
+// 	}
+// 	if input.IsPressed("down") {
+// 		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
+// 	}
+// 	if input.WasPressed("console") {
+// 		console.stepVisibility()
+// 	}
+// 	cam.Yaw += input.CursorDelta[0] * mouseSensitivity
+// 	cam.Pitch += input.CursorDelta[1] * mouseSensitivity
+// 	if cam.Pitch > 89 {
+// 		cam.Pitch = 89
+// 	}
+// 	if cam.Pitch < -89 {
+// 		cam.Pitch = -89
+// 	}
+// }
+
+func debugMessageHandler(source, gltype, id, severity uint32, length int32,
+	message string, userParam unsafe.Pointer) {
+	log.Println("opengl:", message)
 }
