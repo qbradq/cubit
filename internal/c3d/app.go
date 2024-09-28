@@ -76,7 +76,7 @@ func NewApp( /*faces *FaceAtlas,*/ tiles *FaceAtlas) (*App, error) {
 		return nil, err
 	}
 	ret.fm = newFontManager(ret.pText)
-	ret.debugText = newTextMesh(ret.fm, ret.pText)
+	ret.debugText = newTextMesh(ret.fm)
 	// ui.glsl
 	ret.pUI, err = loadProgram("ui")
 	if err != nil {
@@ -167,7 +167,7 @@ func (a *App) SetCrosshair(f FaceIndex, l uint16) {
 
 // NewUIMesh creates and returns a new UIMesh.
 func (a *App) NewUIMesh() *UIMesh {
-	return newUIMesh(a.fm, a.pUI)
+	return newUIMesh(a.fm)
 }
 
 // AddUIMesh adds the UI mesh to the list to render.

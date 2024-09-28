@@ -25,26 +25,20 @@ type UIMesh struct {
 }
 
 // newUIMesh creates a new UIMesh ready for use.
-func newUIMesh(f *fontManager, prg *program) *UIMesh {
+func newUIMesh(f *fontManager) *UIMesh {
 	// Init
 	ret := &UIMesh{
-		Text: newTextMesh(f, prg),
+		Text: newTextMesh(f),
 	}
-	gl.GenVertexArrays(1, &ret.vao)
-	gl.GenBuffers(1, &ret.vbo)
-	// Configure buffer attributes
-	var stride int32 = 2*2 + 2*1
-	var offset int = 0
-	gl.BindVertexArray(ret.vao)
-	gl.BindBuffer(gl.ARRAY_BUFFER, ret.vbo)
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexPosition")),
-		2, gl.SHORT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexPosition")))
-	offset += 2 * 2
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexUV")),
-		2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
-	offset += 2 * 1
+	gl.CreateBuffers(1, &ret.vbo)
+	gl.CreateVertexArrays(1, &ret.vao)
+	gl.VertexArrayVertexBuffer(ret.vao, 0, ret.vbo, 0, 2*2+2*1)
+	gl.EnableVertexArrayAttrib(ret.vao, 0)
+	gl.EnableVertexArrayAttrib(ret.vao, 1)
+	gl.VertexArrayAttribFormat(ret.vao, 0, 2, gl.SHORT, false, 0)
+	gl.VertexArrayAttribFormat(ret.vao, 1, 2, gl.BYTE, false, 2*2)
+	gl.VertexArrayAttribBinding(ret.vao, 0, 0)
+	gl.VertexArrayAttribBinding(ret.vao, 1, 0)
 	return ret
 }
 
@@ -126,31 +120,11 @@ func (e *UIMesh) NinePatch(x, y, w, h int, n NinePatch) {
 	e.Scaled(c[0][0], c[0][1], c[1][0], c[1][1], n[4])
 }
 
-func (e *UIMesh) buildBuffers() {
-	if len(e.d) < 1 {
-		return
-	}
-	if e.vao != invalidVAO {
-		gl.DeleteVertexArrays(1, &e.vao)
-	}
-	if e.vbo != invalidVBO {
-		gl.DeleteBuffers(1, &e.vbo)
-	}
-	gl.CreateBuffers(1, &e.vbo)
-	gl.NamedBufferStorage(e.vbo, len(e.d), gl.Ptr(e.d), 0)
-	gl.CreateVertexArrays(1, &e.vao)
-	gl.VertexArrayVertexBuffer(e.vao, 0, e.vbo, 0, 2*2+2*1)
-	gl.EnableVertexArrayAttrib(e.vao, 0)
-	gl.EnableVertexArrayAttrib(e.vao, 1)
-	gl.VertexArrayAttribFormat(e.vao, 0, 2, gl.SHORT, false, 0)
-	gl.VertexArrayAttribFormat(e.vao, 1, 2, gl.BYTE, false, 2*2)
-	gl.VertexArrayAttribBinding(e.vao, 0, 0)
-	gl.VertexArrayAttribBinding(e.vao, 1, 0)
-}
-
 func (e *UIMesh) draw() {
 	if e.vboDirty {
-		e.buildBuffers()
+		if len(e.d) > 0 {
+			gl.NamedBufferData(e.vbo, len(e.d), gl.Ptr(e.d), gl.STATIC_DRAW)
+		}
 		e.vboDirty = false
 	}
 	if e.vao != invalidVAO {

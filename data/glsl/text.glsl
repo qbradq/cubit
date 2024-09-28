@@ -4,8 +4,8 @@
 uniform mat4 uProjectionMatrix;
 uniform vec3 uPosition;
 
-in vec2 aVertexPosition;
-in vec2 aVertexUV;
+in layout(location=0) vec2 aVertexPosition;
+in layout(location=1) vec2 aVertexUV;
 
 out vec2 uv;
 
@@ -18,9 +18,7 @@ void main() {
 [FRAGMENT]
 #version 460
 
-precision mediump float;
-
-uniform sampler2D uFont;
+uniform layout(binding=0) sampler2D uFont;
 
 in vec2 uv;
 

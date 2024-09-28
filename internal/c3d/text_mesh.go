@@ -39,26 +39,20 @@ type TextMesh struct {
 }
 
 // newTextMesh creates a new text mesh with the given contents ready to use.
-func newTextMesh(f *fontManager, prg *program) *TextMesh {
+func newTextMesh(f *fontManager) *TextMesh {
 	// Init
 	ret := &TextMesh{
 		f: f,
 	}
-	gl.GenVertexArrays(1, &ret.vao)
-	gl.GenBuffers(1, &ret.vbo)
-	// Configure buffer attributes
-	var stride int32 = 2*2 + 2*1
-	var offset int = 0
-	gl.BindVertexArray(ret.vao)
-	gl.BindBuffer(gl.ARRAY_BUFFER, ret.vbo)
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexPosition")),
-		2, gl.SHORT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexPosition")))
-	offset += 2 * 2
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexUV")),
-		2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
-	offset += 2 * 1
+	gl.CreateBuffers(1, &ret.vbo)
+	gl.CreateVertexArrays(1, &ret.vao)
+	gl.VertexArrayVertexBuffer(ret.vao, 0, ret.vbo, 0, 2*2+2*1)
+	gl.EnableVertexArrayAttrib(ret.vao, 0)
+	gl.EnableVertexArrayAttrib(ret.vao, 1)
+	gl.VertexArrayAttribFormat(ret.vao, 0, 2, gl.SHORT, false, 0)
+	gl.VertexArrayAttribFormat(ret.vao, 1, 2, gl.BYTE, false, 2*2)
+	gl.VertexArrayAttribBinding(ret.vao, 0, 0)
+	gl.VertexArrayAttribBinding(ret.vao, 1, 0)
 	return ret
 }
 
@@ -117,9 +111,7 @@ func (text *TextMesh) Print(x, y int, s string) {
 func (t *TextMesh) draw() {
 	if t.vboDirty {
 		if len(t.d) > 0 {
-			gl.BindVertexArray(t.vao)
-			gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
-			gl.BufferData(gl.ARRAY_BUFFER, len(t.d), gl.Ptr(t.d), gl.STATIC_DRAW)
+			gl.NamedBufferData(t.vbo, len(t.d), gl.Ptr(t.d), gl.STATIC_DRAW)
 		}
 		t.vboDirty = false
 	}
