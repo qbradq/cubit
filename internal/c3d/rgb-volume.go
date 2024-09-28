@@ -96,8 +96,44 @@ func (v *RGBAVolume) layer(f Facing, layer int) {
 
 // update builds the optimized voxel slice lattice for rendering.
 func (v *RGBAVolume) update() {
+	face := func(x, y, z int, f Facing) bool {
+		if x < 0 || x > 15 || y < 0 || y > 15 || z < 0 || z > 15 {
+			return false
+		}
+		if v.vd[(z*16*16+y*16+x)*4+3] < 255 {
+			return false
+		}
+		dx := FacingOffsets[f][0] + x
+		dy := FacingOffsets[f][1] + y
+		dz := FacingOffsets[f][2] + z
+		if dx < 0 || dx > 15 || dy < 0 || dy > 15 || dz < 0 || dz > 15 {
+			return false
+		}
+		return v.vd[(dz*16*16+dy*16+dx)*4+3] == 255
+	}
+	min := [3]int{0, 0, 0}
+	max := [3]int{0, 0, 0}
 	for f := North; f <= Bottom; f++ {
+		fplm := facingXYZLayerMask[f]
+		fsm := facingSweepMax[f]
 		for l := 0; l < 16; l++ {
+			min[0] = fplm[0] * l
+			min[1] = fplm[1] * l
+			min[2] = fplm[2] * l
+			max[0] = min[0] + fsm[0]
+			max[1] = min[1] + fsm[1]
+			max[2] = min[2] + fsm[2]
+			for iy := min[1]; iy <= max[1]; iy++ {
+				for iz := min[2]; iz <= max[2]; iz++ {
+					for ix := min[0]; ix <= max[0]; ix++ {
+						if face(ix, iy, iz, f) {
+							goto doLayer
+						}
+					}
+				}
+			}
+			continue
+		doLayer:
 			v.layer(f, l)
 		}
 	}

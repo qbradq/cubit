@@ -30,7 +30,6 @@ void main() {
 	vec4 c = texelFetch(uVolume, ivec3(floor(xyz.x), floor(xyz.y),
 		floor(xyz.z)), 0);
 	if(c.a < 1.0) {
-		// fragColor = vec4(0.0, 0.0, 0.0, 0.1);
 		discard;
 	} else {
 		fragColor = c;

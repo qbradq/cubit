@@ -214,3 +214,14 @@ var facingXYZOffsets = [6][6][3]int{
 		{0, 0, 16},
 	},
 }
+
+// facingSweepMax are the values to add to the min for the max of each dimension
+// when sweeping volume data.
+var facingSweepMax = [6][3]int{
+	{15, 15, 0},
+	{15, 15, 0},
+	{0, 15, 15},
+	{0, 15, 15},
+	{15, 0, 15},
+	{15, 0, 15},
+}
