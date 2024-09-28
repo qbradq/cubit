@@ -3,12 +3,14 @@ package client
 import (
 	"log"
 	"runtime"
+	"time"
 	"unsafe"
 
 	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/cubit"
 )
 
 // Configuration variables
@@ -21,11 +23,11 @@ var screenWidth int = 1280 // Width of the screen in pixels
 var screenHeight int = 720 // Height of the screen in pixels
 var win *glfw.Window       // GLFW window
 var app *c3d.App           // Graphics application
-// var console *consoleWidget // Console widget
-var input *Input // Input instance
+var console *consoleWidget // Console widget
+var input *Input           // Input instance
 
 // UI globals
-// var npWindow c3d.NinePatch
+var npWindow c3d.NinePatch
 
 func init() {
 	runtime.LockOSThread()
@@ -51,38 +53,37 @@ func Main() {
 	win.MakeContextCurrent()
 	win.SetPos(0, 0)
 	// Load mods
-	// if err := cubit.ReloadModInfo(); err != nil {
-	// 	panic(err)
-	// }
-	// if err := cubit.LoadMods("cubit", "town"); err != nil {
-	// 	panic(err)
-	// }
+	if err := cubit.ReloadModInfo(); err != nil {
+		panic(err)
+	}
+	if err := cubit.LoadMods("cubit", "town"); err != nil {
+		panic(err)
+	}
 	// OpenGL initialization
 	app, err = glInit()
 	if err != nil {
 		panic(err)
 	}
-	// defer app.Delete()
 	// Globals init
-	// npWindow = c3d.NinePatch{
-	// 	cubit.GetUITile("/cubit/000"),
-	// 	cubit.GetUITile("/cubit/001"),
-	// 	cubit.GetUITile("/cubit/002"),
-	// 	cubit.GetUITile("/cubit/010"),
-	// 	cubit.GetUITile("/cubit/011"),
-	// 	cubit.GetUITile("/cubit/012"),
-	// 	cubit.GetUITile("/cubit/020"),
-	// 	cubit.GetUITile("/cubit/021"),
-	// 	cubit.GetUITile("/cubit/022"),
-	// }
+	npWindow = c3d.NinePatch{
+		cubit.GetUITile("/cubit/000"),
+		cubit.GetUITile("/cubit/001"),
+		cubit.GetUITile("/cubit/002"),
+		cubit.GetUITile("/cubit/010"),
+		cubit.GetUITile("/cubit/011"),
+		cubit.GetUITile("/cubit/012"),
+		cubit.GetUITile("/cubit/020"),
+		cubit.GetUITile("/cubit/021"),
+		cubit.GetUITile("/cubit/022"),
+	}
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
-	// console = newConsoleWidget(app)
-	// console.printf("%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
-	// console.add(app)
-	// app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
-	// app.CrosshairVisible = true
-	// app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
-	// app.ChunkBoundsVisible = true
+	console = newConsoleWidget(app)
+	console.printf("%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
+	console.add(app)
+	app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
+	app.CrosshairVisible = true
+	app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
+	app.ChunkBoundsVisible = true
 	// World setup
 	// world := cubit.NewWorld()
 	// world.TestGen()
@@ -101,16 +102,16 @@ func Main() {
 		currentFrame := glfw.GetTime()
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
-		// console.update()
+		console.update()
 		// Handle input
 		if input.WasPressed("debug") {
 			app.DebugTextVisible = !app.DebugTextVisible
 		}
-		// if console.isFocused() {
-		// 	console.input()
-		// } else {
-		//  cameraInput(cam)
-		// }
+		if console.isFocused() {
+			console.input()
+		} else {
+			cameraInput( /*cam*/ )
+		}
 		// TODO REMOVE
 		// app.AddDebugLine("Position: X=%d Y=%d Z=%d",
 		// 	int(cam.Position[0]),
@@ -145,47 +146,47 @@ func glInit() (*c3d.App, error) {
 	log.Println("MAX_ARRAY_TEXTURE_LAYERS=", d)
 	gl.GetIntegerv(gl.MAX_3D_TEXTURE_SIZE, &d)
 	log.Println("MAX_3D_TEXTURE_SIZE=", d)
-	return c3d.NewApp( /*cubit.Faces, cubit.UITiles*/ )
+	return c3d.NewApp( /*cubit.Faces,*/ cubit.UITiles)
 }
 
-// func cameraInput(cam *c3d.Camera) {
-// 	speed := walkSpeed * dt
-// 	if input.IsPressed("forward") {
-// 		dir := cam.Front
-// 		dir[1] = 0
-// 		dir = dir.Normalize().Mul(speed)
-// 		cam.Position = cam.Position.Add(dir)
-// 	}
-// 	if input.IsPressed("backward") {
-// 		dir := cam.Front
-// 		dir[1] = 0
-// 		dir = dir.Normalize().Mul(speed)
-// 		cam.Position = cam.Position.Sub(dir)
-// 	}
-// 	if input.IsPressed("left") {
-// 		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-// 	}
-// 	if input.IsPressed("right") {
-// 		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-// 	}
-// 	if input.IsPressed("up") {
-// 		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
-// 	}
-// 	if input.IsPressed("down") {
-// 		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
-// 	}
-// 	if input.WasPressed("console") {
-// 		console.stepVisibility()
-// 	}
-// 	cam.Yaw += input.CursorDelta[0] * mouseSensitivity
-// 	cam.Pitch += input.CursorDelta[1] * mouseSensitivity
-// 	if cam.Pitch > 89 {
-// 		cam.Pitch = 89
-// 	}
-// 	if cam.Pitch < -89 {
-// 		cam.Pitch = -89
-// 	}
-// }
+func cameraInput( /*cam *c3d.Camera*/ ) {
+	// speed := walkSpeed * dt
+	// if input.IsPressed("forward") {
+	// 	dir := cam.Front
+	// 	dir[1] = 0
+	// 	dir = dir.Normalize().Mul(speed)
+	// 	cam.Position = cam.Position.Add(dir)
+	// }
+	// if input.IsPressed("backward") {
+	// 	dir := cam.Front
+	// 	dir[1] = 0
+	// 	dir = dir.Normalize().Mul(speed)
+	// 	cam.Position = cam.Position.Sub(dir)
+	// }
+	// if input.IsPressed("left") {
+	// 	cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+	// }
+	// if input.IsPressed("right") {
+	// 	cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+	// }
+	// if input.IsPressed("up") {
+	// 	cam.Position = cam.Position.Add(cam.Up.Mul(speed))
+	// }
+	// if input.IsPressed("down") {
+	// 	cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
+	// }
+	if input.WasPressed("console") {
+		console.stepVisibility()
+	}
+	// cam.Yaw += input.CursorDelta[0] * mouseSensitivity
+	// cam.Pitch += input.CursorDelta[1] * mouseSensitivity
+	// if cam.Pitch > 89 {
+	// 	cam.Pitch = 89
+	// }
+	// if cam.Pitch < -89 {
+	// 	cam.Pitch = -89
+	// }
+}
 
 func debugMessageHandler(source, gltype, id, severity uint32, length int32,
 	message string, userParam unsafe.Pointer) {

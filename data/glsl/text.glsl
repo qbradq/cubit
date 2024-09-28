@@ -1,13 +1,13 @@
 [VERTEX]
-#version 100
+#version 460
 
 uniform mat4 uProjectionMatrix;
 uniform vec3 uPosition;
 
-attribute vec2 aVertexPosition;
-attribute vec2 aVertexUV;
+in vec2 aVertexPosition;
+in vec2 aVertexUV;
 
-varying vec2 uv;
+out vec2 uv;
 
 void main() {
 	uv = aVertexUV / vec2(64.0, 32.0);
@@ -16,15 +16,16 @@ void main() {
 }
 
 [FRAGMENT]
-#version 100
+#version 460
 
 precision mediump float;
 
 uniform sampler2D uFont;
 
-varying vec2 uv;
+in vec2 uv;
+
+out vec4 color;
 
 void main() {
-    vec4 color = texture2D(uFont, uv);
-    gl_FragColor = color;
+    color = texture(uFont, uv);
 }

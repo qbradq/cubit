@@ -5,9 +5,6 @@ import (
 	"github.com/qbradq/cubit/internal/vox"
 )
 
-const invalidVAO = 0xFFFFFFFF
-const invalidVBO = 0xFFFFFFFF
-
 // CubeMesh is a utility struct that builds cube-based meshes.
 type CubeMesh struct {
 	AABB       vox.AABB  // AABB for the mesh

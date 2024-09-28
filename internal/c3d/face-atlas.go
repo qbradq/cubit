@@ -6,7 +6,7 @@ import (
 	"image/draw"
 	"strconv"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -99,7 +99,7 @@ func FaceIndexFromXYZ(x, y, z int) FaceIndex {
 
 // FaceAtlas manages
 type FaceAtlas struct {
-	textureID uint32      // Texture ID in OpenGL for the atlas
+	tid       uint32      // Texture ID in OpenGL for the atlas
 	nextIndex FaceIndex   // The next FaceIndex value to be assigned
 	img       *image.RGBA // The atlas texture image while building
 }
@@ -141,21 +141,17 @@ func (a *FaceAtlas) AddFace(img *image.RGBA) FaceIndex {
 // upload uploads the entire face atlas to the GPU as a 2D texture array.
 func (a *FaceAtlas) upload(prg *program) {
 	prg.use()
-	gl.GenTextures(1, &a.textureID)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, a.textureID)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
-		atlasTextureDims, atlasTextureDims, 0,
+	gl.CreateTextures(gl.TEXTURE_2D, 1, &a.tid)
+	gl.TextureParameteri(a.tid, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(a.tid, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TextureParameteri(a.tid, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TextureParameteri(a.tid, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TextureStorage2D(a.tid, 1, gl.RGBA8, atlasTextureDims, atlasTextureDims)
+	gl.TextureSubImage2D(a.tid, 0, 0, 0, atlasTextureDims, atlasTextureDims,
 		gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(a.img.Pix))
 }
 
 // bind binds the texture to the 3D texture unit.
-func (a *FaceAtlas) bind(prg *program) {
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, a.textureID)
-	gl.Uniform1i(prg.uni("uAtlas"), 0)
+func (a *FaceAtlas) bind() {
+	gl.BindTextureUnit(0, a.tid)
 }

@@ -1,7 +1,7 @@
 package c3d
 
 import (
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 )
 
 // VoxelMesh is a utility struct that builds voxel-based meshes.

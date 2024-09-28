@@ -67,13 +67,6 @@ func loadProgram(name string) (*program, error) {
 	return ret, nil
 }
 
-// delete deletes the program.
-func (p *program) delete() {
-	p.vShader.delete()
-	p.fShader.delete()
-	gl.DeleteProgram(p.id)
-}
-
 // use makes this program the active one.
 func (p *program) use() {
 	gl.UseProgram(p.id)

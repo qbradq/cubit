@@ -3,7 +3,7 @@ package c3d
 import (
 	"encoding/binary"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -126,15 +126,35 @@ func (e *UIMesh) NinePatch(x, y, w, h int, n NinePatch) {
 	e.Scaled(c[0][0], c[0][1], c[1][0], c[1][1], n[4])
 }
 
+func (e *UIMesh) buildBuffers() {
+	if len(e.d) < 1 {
+		return
+	}
+	if e.vao != invalidVAO {
+		gl.DeleteVertexArrays(1, &e.vao)
+	}
+	if e.vbo != invalidVBO {
+		gl.DeleteBuffers(1, &e.vbo)
+	}
+	gl.CreateBuffers(1, &e.vbo)
+	gl.NamedBufferStorage(e.vbo, len(e.d), gl.Ptr(e.d), 0)
+	gl.CreateVertexArrays(1, &e.vao)
+	gl.VertexArrayVertexBuffer(e.vao, 0, e.vbo, 0, 2*2+2*1)
+	gl.EnableVertexArrayAttrib(e.vao, 0)
+	gl.EnableVertexArrayAttrib(e.vao, 1)
+	gl.VertexArrayAttribFormat(e.vao, 0, 2, gl.SHORT, false, 0)
+	gl.VertexArrayAttribFormat(e.vao, 1, 2, gl.BYTE, false, 2*2)
+	gl.VertexArrayAttribBinding(e.vao, 0, 0)
+	gl.VertexArrayAttribBinding(e.vao, 1, 0)
+}
+
 func (e *UIMesh) draw() {
 	if e.vboDirty {
-		if len(e.d) > 0 {
-			gl.BindVertexArray(e.vao)
-			gl.BindBuffer(gl.ARRAY_BUFFER, e.vbo)
-			gl.BufferData(gl.ARRAY_BUFFER, len(e.d), gl.Ptr(e.d), gl.STATIC_DRAW)
-		}
+		e.buildBuffers()
 		e.vboDirty = false
 	}
-	gl.BindVertexArray(e.vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, e.count)
+	if e.vao != invalidVAO {
+		gl.BindVertexArray(e.vao)
+		gl.DrawArrays(gl.TRIANGLES, 0, e.count)
+	}
 }

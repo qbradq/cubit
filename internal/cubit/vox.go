@@ -72,5 +72,5 @@ func (g *Vox) Add(a *c3d.App, pos Position, f c3d.Facing) {
 		float32(pos.Y),
 		float32(pos.Z),
 	}
-	a.AddVoxelMesh(g.mesh, o)
+	// a.AddVoxelMesh(g.mesh, o)
 }

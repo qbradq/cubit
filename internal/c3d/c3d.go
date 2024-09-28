@@ -8,6 +8,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+const invalidVAO = 0xFFFFFFFF
+const invalidVBO = 0xFFFFFFFF
+
 // VirtualScreenWidth is the width of the virtual 2D screen in pixels.
 const VirtualScreenWidth int = 320
 
@@ -16,7 +19,7 @@ const VirtualScreenHeight int = 180
 
 // NinePatch describes the resources used to generate an arbitrarily sized
 // rectangle skinned with nine tiles stretched over the area.
-// type NinePatch [9]FaceIndex
+type NinePatch [9]FaceIndex
 
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.
 type Facing uint8
