@@ -26,10 +26,9 @@ const VoxRefInvalid VoxRef = 0xFFFF
 
 // Vox manages an RGBA voxel image.
 type Vox struct {
-	Ref                  VoxRef         // Voxel reference
-	mesh                 *c3d.VoxelMesh // Mesh
-	width, height, depth int            // Dimensions
-	voxels               [][4]uint8     // RGBA voxels
+	Ref  VoxRef          // Voxel reference
+	rgba *c3d.RGBAVolume // Voxel volume
+	v    *util.Vox       // Voxel model file
 }
 
 // GetVoxByPath returns the vox model by mod path.
@@ -56,11 +55,7 @@ var voxDefs = []*Vox{}
 // NewVox creates a new Vox object ready to use.
 func NewVox(v *util.Vox) *Vox {
 	return &Vox{
-		mesh:   c3d.BuildVoxelMesh(v.Voxels, v.Width, v.Height, v.Depth),
-		width:  v.Width,
-		height: v.Height,
-		depth:  v.Depth,
-		voxels: v.Voxels,
+		v: v,
 	}
 }
 
@@ -72,5 +67,9 @@ func (g *Vox) Add(a *c3d.App, pos Position, f c3d.Facing) {
 		float32(pos.Y),
 		float32(pos.Z),
 	}
-	// a.AddVoxelMesh(g.mesh, o)
+	if g.rgba == nil {
+		g.rgba = c3d.NewRGBVolume()
+		g.rgba.SetData(g.v)
+	}
+	a.AddRGBAVolume(g.rgba, o)
 }

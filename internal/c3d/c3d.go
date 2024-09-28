@@ -48,6 +48,8 @@ var FacingOffsets = [6][3]int{
 	{0, -1, 0},
 }
 
+// layerOffsets are the offsets
+
 // facingNormalCompressed are the facing normal bytes per facing.
 var facingNormalCompressed = [6][3]byte{
 	{1, 1, 0},
@@ -79,7 +81,7 @@ func getGlError(glHandle uint32, checkTrueParam uint32, getObjIvFn getObjIv,
 	return nil
 }
 
-var CubeFacingOffsets = [6][6][3]uint8{
+var CubeFacingOffsets = [6][6][3]int{
 	{ // North
 		{1, 1, 0}, // TL
 		{0, 1, 0}, // TR
@@ -130,53 +132,85 @@ var CubeFacingOffsets = [6][6][3]uint8{
 	},
 }
 
-var cubeFacingOffsetsI = [6][6][3]byte{
-	{ // North
-		{1, 1, 0}, // TL
-		{0, 1, 0}, // TR
-		{1, 0, 0}, // BL
-		{1, 0, 0}, // BL
-		{0, 1, 0}, // TR
-		{0, 0, 0}, // BR
+// layerAxis indicates the major axis direction for layers.
+var layerAxis = [6][3]int{
+	{0, 0, 1}, // North
+	{0, 0, 1},
+	{1, 0, 0},
+	{1, 0, 0},
+	{0, 1, 0},
+	{0, 1, 0},
+}
+
+// layerAxisMask indicates layer masks for dimensional multiplication.
+var layerAxisMask = [6][3]int{
+	{16, 16, 1},
+	{16, 16, 1},
+	{1, 16, 16},
+	{1, 16, 16},
+	{16, 1, 16},
+	{16, 1, 16},
+}
+
+// facingXYZLayerMask is the mapping of face-to-layer multiplication mask for
+// the layer.
+var facingXYZLayerMask = [6][3]int{
+	{0, 0, 1},
+	{0, 0, 1},
+	{1, 0, 0},
+	{1, 0, 0},
+	{0, 1, 0},
+	{0, 1, 0},
+}
+
+// Mapping of face-to-vertex XYZ offsets
+var facingXYZOffsets = [6][6][3]int{
+	{
+		{16, 16, 0},
+		{0, 16, 0},
+		{16, 0, 0},
+		{16, 0, 0},
+		{0, 16, 0},
+		{0, 0, 0},
 	},
-	{ // South
-		{0, 1, 1}, // TL
-		{1, 1, 1}, // TR
-		{0, 0, 1}, // BL
-		{0, 0, 1}, // BL
-		{1, 1, 1}, // TR
-		{1, 0, 1}, // BR
+	{
+		{0, 16, 0},
+		{16, 16, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+		{16, 16, 0},
+		{16, 0, 0},
 	},
-	{ // East
-		{1, 1, 1}, // TL
-		{1, 1, 0}, // TR
-		{1, 0, 1}, // BL
-		{1, 0, 1}, // BL
-		{1, 1, 0}, // TR
-		{1, 0, 0}, // BR
+	{
+		{0, 16, 16},
+		{0, 16, 0},
+		{0, 0, 16},
+		{0, 0, 16},
+		{0, 16, 0},
+		{0, 0, 0},
 	},
-	{ // West
-		{0, 1, 0}, // TL
-		{0, 1, 1}, // TR
-		{0, 0, 0}, // BL
-		{0, 0, 0}, // BL
-		{0, 1, 1}, // TR
-		{0, 0, 1}, // BR
+	{
+		{0, 16, 0},
+		{0, 16, 16},
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 16, 16},
+		{0, 0, 16},
 	},
-	{ // Top
-		{0, 1, 0}, // TL
-		{1, 1, 0}, // TR
-		{0, 1, 1}, // BL
-		{0, 1, 1}, // BL
-		{1, 1, 0}, // TR
-		{1, 1, 1}, // BR
+	{
+		{0, 0, 0},
+		{16, 0, 0},
+		{0, 0, 16},
+		{0, 0, 16},
+		{16, 0, 0},
+		{16, 0, 16},
 	},
-	{ // Bottom
-		{1, 0, 0}, // TL
-		{0, 0, 0}, // TR
-		{1, 0, 1}, // BL
-		{1, 0, 1}, // BL
-		{0, 0, 0}, // TR
-		{0, 0, 1}, // BR
+	{
+		{16, 0, 0},
+		{0, 0, 0},
+		{16, 0, 16},
+		{16, 0, 16},
+		{0, 0, 0},
+		{0, 0, 16},
 	},
 }

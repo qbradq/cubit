@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"math"
 
-	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/go-gl/gl/v4.6-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 

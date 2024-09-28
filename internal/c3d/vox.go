@@ -32,8 +32,7 @@ func BuildVoxelMesh(voxels [][4]uint8,
 		slices[i] = make([][4]uint8, w*h*d)
 	}
 	addSlice := func(pos [3]int, f Facing, c [4]uint8) {
-		p := [3]uint8{uint8(pos[0]), uint8(pos[1]), uint8(pos[2])}
-		ret.AddFace(p, f, c)
+		ret.AddFace(pos, f, c)
 	}
 	face := func(pos [3]int, f Facing, c [4]uint8) {
 		transparent := false

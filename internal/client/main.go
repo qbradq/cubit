@@ -91,7 +91,9 @@ func Main() {
 	// chunk.Add(world, app)
 	// cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
 	// cam := c3d.NewCamera(mgl32.Vec3{7, 3, 7})
-	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	vox := cubit.GetVoxByPath("/cubit/debug")
+	vox.Add(app, cubit.Pos(0, 0, 0), c3d.North)
 	// Main loop
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
@@ -110,17 +112,17 @@ func Main() {
 		if console.isFocused() {
 			console.input()
 		} else {
-			cameraInput( /*cam*/ )
+			cameraInput(cam)
 		}
 		// TODO REMOVE
-		// app.AddDebugLine("Position: X=%d Y=%d Z=%d",
-		// 	int(cam.Position[0]),
-		// 	int(cam.Position[1]),
-		// 	int(cam.Position[2]),
-		// )
+		app.AddDebugLine("Position: X=%d Y=%d Z=%d",
+			int(cam.Position[0]),
+			int(cam.Position[1]),
+			int(cam.Position[2]),
+		)
 		app.AddDebugLine("Hello, 4.6-core!")
 		// Draw
-		app.Draw( /*cam*/ )
+		app.Draw(cam)
 		// Finish the frame
 		win.SwapBuffers()
 	}
@@ -149,43 +151,43 @@ func glInit() (*c3d.App, error) {
 	return c3d.NewApp( /*cubit.Faces,*/ cubit.UITiles)
 }
 
-func cameraInput( /*cam *c3d.Camera*/ ) {
-	// speed := walkSpeed * dt
-	// if input.IsPressed("forward") {
-	// 	dir := cam.Front
-	// 	dir[1] = 0
-	// 	dir = dir.Normalize().Mul(speed)
-	// 	cam.Position = cam.Position.Add(dir)
-	// }
-	// if input.IsPressed("backward") {
-	// 	dir := cam.Front
-	// 	dir[1] = 0
-	// 	dir = dir.Normalize().Mul(speed)
-	// 	cam.Position = cam.Position.Sub(dir)
-	// }
-	// if input.IsPressed("left") {
-	// 	cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	// }
-	// if input.IsPressed("right") {
-	// 	cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	// }
-	// if input.IsPressed("up") {
-	// 	cam.Position = cam.Position.Add(cam.Up.Mul(speed))
-	// }
-	// if input.IsPressed("down") {
-	// 	cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
-	// }
+func cameraInput(cam *c3d.Camera) {
+	speed := walkSpeed * dt
+	if input.IsPressed("forward") {
+		dir := cam.Front
+		dir[1] = 0
+		dir = dir.Normalize().Mul(speed)
+		cam.Position = cam.Position.Add(dir)
+	}
+	if input.IsPressed("backward") {
+		dir := cam.Front
+		dir[1] = 0
+		dir = dir.Normalize().Mul(speed)
+		cam.Position = cam.Position.Sub(dir)
+	}
+	if input.IsPressed("left") {
+		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+	}
+	if input.IsPressed("right") {
+		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+	}
+	if input.IsPressed("up") {
+		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
+	}
+	if input.IsPressed("down") {
+		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
+	}
 	if input.WasPressed("console") {
 		console.stepVisibility()
 	}
-	// cam.Yaw += input.CursorDelta[0] * mouseSensitivity
-	// cam.Pitch += input.CursorDelta[1] * mouseSensitivity
-	// if cam.Pitch > 89 {
-	// 	cam.Pitch = 89
-	// }
-	// if cam.Pitch < -89 {
-	// 	cam.Pitch = -89
-	// }
+	cam.Yaw += input.CursorDelta[0] * mouseSensitivity
+	cam.Pitch += input.CursorDelta[1] * mouseSensitivity
+	if cam.Pitch > 89 {
+		cam.Pitch = 89
+	}
+	if cam.Pitch < -89 {
+		cam.Pitch = -89
+	}
 }
 
 func debugMessageHandler(source, gltype, id, severity uint32, length int32,

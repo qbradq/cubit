@@ -23,9 +23,9 @@ func NewVoxelMesh() *VoxelMesh {
 }
 
 // vert adds a vertex with the given attributes.
-func (m *VoxelMesh) vert(x, y, z uint8, c [4]uint8, f Facing) {
+func (m *VoxelMesh) vert(x, y, z int, c [4]uint8, f Facing) {
 	m.d = append(m.d,
-		x, y, z,
+		byte(x), byte(y), byte(z),
 		c[0], c[1], c[2],
 		facingNormalCompressed[f][0],
 		facingNormalCompressed[f][1],
@@ -38,7 +38,7 @@ func (m *VoxelMesh) vert(x, y, z uint8, c [4]uint8, f Facing) {
 // The face is scaled down to the size of one world voxel. Pos is the mesh-
 // relative voxel coordinate. Note that the alpha channel is ignored by this
 // function.
-func (m *VoxelMesh) AddFace(p [3]uint8, f Facing, c [4]uint8) {
+func (m *VoxelMesh) AddFace(p [3]int, f Facing, c [4]uint8) {
 	o := CubeFacingOffsets[f]
 	// X              Y                 Z           R     G     B          Normal XYZ
 	m.vert(p[0]+o[0][0], p[1]+o[0][1], p[2]+o[0][2], c, f) // Top left

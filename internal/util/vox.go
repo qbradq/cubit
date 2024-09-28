@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 )
 
 const minVoxFileVersion uint32 = 150
@@ -82,6 +81,9 @@ func NewVoxFromReader(r io.Reader) (*Vox, error) {
 			cr := bytes.NewReader(c.data)
 			n := int(GetUint32(cr))
 			xyziBuf = make([]uint8, ret.Width*ret.Height*ret.Depth)
+			for i := range xyziBuf {
+				xyziBuf[i] = 0xFF
+			}
 			for i := 0; i < n; i++ {
 				z := int(GetByte(cr))
 				x := int(GetByte(cr))
@@ -98,16 +100,23 @@ func NewVoxFromReader(r io.Reader) (*Vox, error) {
 				pal[i+1][1] = GetByte(cr)
 				pal[i+1][2] = GetByte(cr)
 				pal[i+1][3] = GetByte(cr)
-				if pal[i+1][3] < 255 {
-					log.Println(pal[i+1][3])
-				}
+				pal[i+1][3] = 0xFF
 			}
 		}
 	}
 	// Compile voxel volume from the XYZI buffer
 	ret.Voxels = make([][4]uint8, ret.Width*ret.Height*ret.Depth)
 	for i, ci := range xyziBuf {
-		ret.Voxels[i] = pal[ci]
+		if ci == 0xFF {
+			ret.Voxels[i] = [4]uint8{0, 0, 0, 0}
+		} else {
+			ret.Voxels[i] = pal[ci]
+		}
 	}
 	return ret, nil
+}
+
+// Get returns the rgba value at the given coordinate.
+func (v *Vox) Get(x, y, z int) [4]uint8 {
+	return v.Voxels[y*v.Width*v.Depth+z*v.Width+x]
 }
