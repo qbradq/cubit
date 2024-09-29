@@ -19,7 +19,6 @@ type CubeMesh struct {
 	count      int32     // Vertex count
 	vboCurrent bool      // If false, the VBO needs to be reuploaded.
 	d          []byte    // Raw mesh data
-	vbuf       [6]byte   // Vertex data buffer
 }
 
 // NewCubeMesh constructs a new CubeMesh object ready for use.
@@ -34,14 +33,7 @@ func NewCubeMesh(aabb vox.AABB) *CubeMesh {
 
 // vert adds a single vertex to the data buffer.
 func (m *CubeMesh) vert(x, y, z, u, v byte, f Facing) {
-	d := m.vbuf[:]
-	d[0] = x
-	d[1] = y
-	d[2] = z
-	d[3] = u
-	d[4] = v
-	d[5] = facingLightLevels[f]
-	m.d = append(m.d, d...)
+	m.d = append(m.d, x, y, z, u, v, facingLightLevels[f])
 	m.count++
 }
 
@@ -102,7 +94,6 @@ func (m *CubeMesh) draw(p *program) {
 	}
 	gl.BindVertexArray(m.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
-	gl.BindVertexArray(0)
 }
 
 // drawAABB draws the axis-aligned bounding box of this mesh.

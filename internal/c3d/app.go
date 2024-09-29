@@ -24,26 +24,26 @@ type cubeMeshRef struct {
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	CursorVisible      bool           // If true, draw the cursor
-	CrosshairVisible   bool           // If true, draw the crosshair
-	DebugTextVisible   bool           // If true, draw the debug text
-	ChunkBoundsVisible bool           // If true, draws the chunk bounds
-	cubeMeshes         []cubeMeshRef  // List of cube meshes to draw along with orientation
-	voxelMeshes        []voxelMeshRef // List of voxel meshes to draw along with orientation
-	uiMeshes           []*UIMesh      // List of UI meshes to draw
-	cursor             *UIMesh        // Cursor mesh
-	crosshair          *UIMesh        // Crosshair mesh
-	axis               *LineMesh      // Debug axis indicator
-	pRGBFB             *program       // RGB with no lighting
-	pVoxelMesh         *program       // RGB
-	pCubeMesh          *program       // Face atlas texturing
-	pText              *program       // Text rendering
-	pUI                *program       // UI tile rendering
-	faces              *FaceAtlas     // Face atlas to use for cube mesh rendering
-	tiles              *FaceAtlas     // Face atlas to use for ui tile rendering
-	fm                 *fontManager   // Font manager for the application
-	debugLines         []string       // Lines for the debug messages
-	debugText          *TextMesh      // Debug text
+	CursorVisible      bool            // If true, draw the cursor
+	CrosshairVisible   bool            // If true, draw the crosshair
+	DebugTextVisible   bool            // If true, draw the debug text
+	ChunkBoundsVisible bool            // If true, draws the chunk bounds
+	cubeMeshes         []cubeMeshRef   // List of cube meshes to draw along with orientation
+	voxelMeshes        []voxelMeshRef  // List of voxel meshes to draw along with orientation
+	uiMeshes           []*UIMesh       // List of UI meshes to draw
+	cursor             *UIMesh         // Cursor mesh
+	crosshair          *UIMesh         // Crosshair mesh
+	axis               *LineMesh       // Debug axis indicator
+	pRGBFB             *program        // RGB with no lighting
+	pVoxelMesh         *program        // RGB
+	pCubeMesh          *program        // Face atlas texturing
+	pText              *program        // Text rendering
+	pUI                *program        // UI tile rendering
+	faces              *FaceAtlas      // Face atlas to use for cube mesh rendering
+	tiles              *FaceAtlas      // Face atlas to use for ui tile rendering
+	fm                 *fontManager    // Font manager for the application
+	debugLines         []ColoredString // Lines for the debug messages
+	debugText          *TextMesh       // Debug text
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -101,8 +101,11 @@ func (a *App) Delete() {
 }
 
 // AddDebugLine sets the debug text drawn in the bottom-left.
-func (a *App) AddDebugLine(f string, args ...any) {
-	a.debugLines = append(a.debugLines, fmt.Sprintf(f, args...))
+func (a *App) AddDebugLine(c [3]uint8, f string, args ...any) {
+	a.debugLines = append(a.debugLines, ColoredString{
+		String: fmt.Sprintf(f, args...),
+		Color:  c,
+	})
 }
 
 // updateDebugText updates the debug text mesh.
@@ -110,7 +113,7 @@ func (a *App) updateDebugText() {
 	a.debugText.Reset()
 	y := VirtualScreenHeight - len(a.debugLines)*LineSpacingVS
 	for _, line := range a.debugLines {
-		a.debugText.Print(0, y, line)
+		a.debugText.Print(0, y, line.Color, line.String)
 		y += LineSpacingVS
 	}
 }
@@ -175,7 +178,7 @@ func (a *App) RemoveCubeMesh(m *CubeMesh) {
 
 // NewUIMesh creates and returns a new UIMesh.
 func (a *App) NewUIMesh() *UIMesh {
-	return newUIMesh(a.fm, a.pUI)
+	return newUIMesh(a.fm, a.pUI, a.pText)
 }
 
 // AddUIMesh adds the UI mesh to the list to render.

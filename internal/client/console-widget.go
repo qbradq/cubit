@@ -17,20 +17,20 @@ const conHeight int = 40
 // and offers an interactive command line.
 type consoleWidget struct {
 	baseWidget
-	lines     []string // Log lines
-	lp        int      // Line pointer, points to the next index into lines to be used.
-	vis       int      // Visibility code
-	textDirty bool     // If true, all text of the widget needs redrawn
-	prompt    string   // Prompt string
-	po        int      // Offset into the prompt that appears on the left side
-	cp        int      // Caret position
+	lines     []c3d.ColoredString // Log lines
+	lp        int                 // Line pointer, points to the next index into lines to be used.
+	vis       int                 // Visibility code
+	textDirty bool                // If true, all text of the widget needs redrawn
+	prompt    string              // Prompt string
+	po        int                 // Offset into the prompt that appears on the left side
+	cp        int                 // Caret position
 }
 
 // newConsoleWidget creates a new console widget and returns it.
 func newConsoleWidget(app *c3d.App) *consoleWidget {
 	ret := &consoleWidget{
 		baseWidget: *newBaseWidget(app),
-		lines:      make([]string, conLines),
+		lines:      make([]c3d.ColoredString, conLines),
 	}
 	ret.Layer = layerConsole
 	ret.cp = len(ret.prompt)
@@ -46,16 +46,19 @@ func newConsoleWidget(app *c3d.App) *consoleWidget {
 }
 
 // printf add log lines to the console.
-func (w *consoleWidget) printf(fm string, args ...any) {
+func (w *consoleWidget) printf(c [3]uint8, fm string, args ...any) {
 	str := fmt.Sprintf(fm, args...)
 	lines := strings.Split(wordwrap.WrapString(str, uint(conWidth)), "\n")
 	for _, line := range lines {
-		w.pushLine(line)
+		w.pushLine(c3d.ColoredString{
+			String: line,
+			Color:  c,
+		})
 	}
 }
 
 // pushLine pushes a line onto the log.
-func (w *consoleWidget) pushLine(line string) {
+func (w *consoleWidget) pushLine(line c3d.ColoredString) {
 	w.textDirty = true
 	w.lines[w.lp] = line
 	w.lp++
@@ -97,7 +100,7 @@ func (w *consoleWidget) drawText() {
 			break
 		}
 		line := w.lines[li]
-		w.Text.Print(p[0], p[1], line)
+		w.Text.Print(p[0], p[1], line.Color, line.String)
 		li--
 		if li < 0 {
 			li = conLines - 1
@@ -119,10 +122,10 @@ func (w *consoleWidget) drawText() {
 		prompt = prompt[:conWidth]
 	}
 	p[1] = c3d.CellDimsVS * (conHeight + 3)
-	w.Text.Print(p[0], p[1], prompt)
+	w.Text.Print(p[0], p[1], [3]uint8{255, 255, 255}, prompt)
 	// Draw caret
 	p[0] = c3d.CellDimsVS * ((c - l) + 1)
-	w.Text.Print(p[0], p[1], "_")
+	w.Text.Print(p[0], p[1], [3]uint8{255, 255, 255}, "_")
 }
 
 // update implements the widget interface.
@@ -189,6 +192,6 @@ func (w *consoleWidget) handleCommand(l string) {
 	case "exit":
 		win.SetShouldClose(true)
 	default:
-		w.printf("error: unknown command %s", fields[0])
+		w.printf([3]uint8{255, 0, 0}, "error: unknown command %s", fields[0])
 	}
 }

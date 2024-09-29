@@ -18,6 +18,12 @@ const VirtualScreenHeight int = 180
 // rectangle skinned with nine tiles stretched over the area.
 type NinePatch [9]FaceIndex
 
+// ColoredString is a string associated with an RGB color.
+type ColoredString struct {
+	String string   // The string
+	Color  [3]uint8 // The color
+}
+
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.
 type Facing uint8
 

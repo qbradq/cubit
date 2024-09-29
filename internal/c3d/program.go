@@ -96,30 +96,3 @@ func (p *program) uni(name string) int32 {
 	}
 	return id
 }
-
-// // DrawCubeMesh draws a cube mesh.
-// func (p *Program) DrawCubeMesh(m *CubeMesh, o *Orientation) {
-// 	if m.vao == invalidVAO {
-// 		gl.GenVertexArrays(1, &m.vao)
-// 	}
-// 	if m.vbo == invalidVBO {
-// 		gl.GenBuffers(1, &m.vbo)
-// 	}
-// 	if !m.vboCurrent {
-// 		p.fillBuffer(m.vao, m.vbo, m.d)
-// 		m.vboCurrent = true
-// 	}
-// 	mt := p.Camera.TransformMatrix().Mul4(o.TransformMatrix())
-// 	gl.UniformMatrix4fv(p.uModelView, 1, false, &mt[0])
-// 	nt := mt.Inv().Transpose()
-// 	gl.UniformMatrix4fv(p.uNormal, 1, false, &nt[0])
-// 	if m.voxel {
-// 		gl.Uniform1i(p.uDrawMode, drawModeColor)
-// 	} else {
-// 		gl.Uniform1i(p.uDrawMode, drawModeAtlas)
-// 		p.atlas.bind(p.uAtlas)
-// 	}
-// 	gl.BindVertexArray(m.vao)
-// 	gl.DrawArrays(gl.TRIANGLES, 0, m.count)
-// 	gl.BindVertexArray(0)
-// }

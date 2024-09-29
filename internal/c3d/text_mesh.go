@@ -35,7 +35,7 @@ type TextMesh struct {
 	vao      uint32       // Vertex buffer array ID
 	vbo      uint32       // Vertex buffer object ID
 	vboDirty bool         // If true, the VBO needs to be updated
-	vbuf     [6]byte      // Vertex buffer
+	vbuf     [9]byte      // Vertex buffer
 }
 
 // newTextMesh creates a new text mesh with the given contents ready to use.
@@ -47,7 +47,7 @@ func newTextMesh(f *fontManager, prg *program) *TextMesh {
 	gl.GenVertexArrays(1, &ret.vao)
 	gl.GenBuffers(1, &ret.vbo)
 	// Configure buffer attributes
-	var stride int32 = 2*2 + 2*1
+	var stride int32 = 2*2 + 2*1 + 3*1
 	var offset int = 0
 	gl.BindVertexArray(ret.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, ret.vbo)
@@ -59,6 +59,10 @@ func newTextMesh(f *fontManager, prg *program) *TextMesh {
 		2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
 	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
 	offset += 2 * 1
+	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexColor")),
+		3, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
+	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexColor")))
+	offset += 3 * 1
 	return ret
 }
 
@@ -71,18 +75,21 @@ func (t *TextMesh) Reset() {
 }
 
 // vert packs one vertex into the mesh.
-func (t *TextMesh) vert(x, y, u, v int) {
+func (t *TextMesh) vert(x, y, u, v int, c [3]uint8) {
 	d := t.vbuf[:]
 	binary.LittleEndian.PutUint16(d[0:2], uint16(int16(x)))
 	binary.LittleEndian.PutUint16(d[2:4], uint16(int16(y)))
 	d[4] = byte(u)
 	d[5] = byte(v)
+	d[6] = c[0]
+	d[7] = c[1]
+	d[8] = c[2]
 	t.d = append(t.d, d...)
 	t.count++
 }
 
 // Print prints a string at the given screen position in virtual screen units.
-func (text *TextMesh) Print(x, y int, s string) {
+func (text *TextMesh) Print(x, y int, c [3]uint8, s string) {
 	if len(s) == 0 {
 		return
 	}
@@ -104,12 +111,12 @@ func (text *TextMesh) Print(x, y int, s string) {
 		ul := g.u
 		ur := ul + 1
 		//XY  U   V
-		text.vert(l, t, ul, ut) // TL
-		text.vert(r, t, ur, ut) // TR
-		text.vert(l, b, ul, ub) // BL
-		text.vert(l, b, ul, ub) // BL
-		text.vert(r, t, ur, ut) // TR
-		text.vert(r, b, ur, ub) // BR
+		text.vert(l, t, ul, ut, c) // TL
+		text.vert(r, t, ur, ut, c) // TR
+		text.vert(l, b, ul, ub, c) // BL
+		text.vert(l, b, ul, ub, c) // BL
+		text.vert(r, t, ur, ut, c) // TR
+		text.vert(r, b, ur, ub, c) // BR
 		l += vsGlyphWidth
 	}
 }

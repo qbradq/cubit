@@ -25,10 +25,10 @@ type UIMesh struct {
 }
 
 // newUIMesh creates a new UIMesh ready for use.
-func newUIMesh(f *fontManager, prg *program) *UIMesh {
+func newUIMesh(f *fontManager, uiPrg, textPrg *program) *UIMesh {
 	// Init
 	ret := &UIMesh{
-		Text: newTextMesh(f, prg),
+		Text: newTextMesh(f, textPrg),
 	}
 	gl.GenVertexArrays(1, &ret.vao)
 	gl.GenBuffers(1, &ret.vbo)
@@ -37,13 +37,13 @@ func newUIMesh(f *fontManager, prg *program) *UIMesh {
 	var offset int = 0
 	gl.BindVertexArray(ret.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, ret.vbo)
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexPosition")),
+	gl.VertexAttribPointerWithOffset(uint32(uiPrg.attr("aVertexPosition")),
 		2, gl.SHORT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexPosition")))
+	gl.EnableVertexAttribArray(uint32(uiPrg.attr("aVertexPosition")))
 	offset += 2 * 2
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexUV")),
+	gl.VertexAttribPointerWithOffset(uint32(uiPrg.attr("aVertexUV")),
 		2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
+	gl.EnableVertexAttribArray(uint32(uiPrg.attr("aVertexUV")))
 	offset += 2 * 1
 	return ret
 }

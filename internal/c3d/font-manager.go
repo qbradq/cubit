@@ -122,8 +122,29 @@ func (t *fontManager) cacheGlyph(r rune) glyph {
 		g.v*faCellHeight+(faCellHeight-faCellYOfs),
 	)
 	t.d.DrawString(string(r))
+	t.outlineGlyph(
+		g.u*faCellWidth,
+		g.v*faCellHeight,
+		faCellWidth, faCellHeight,
+	)
 	t.imgDirty = true
 	return g
+}
+
+// Renders an outline for glyph within the given bounds.
+func (t *fontManager) outlineGlyph(x, y, w, h int) {
+	for iy := y; iy < y+h; iy++ {
+		for ix := x; ix < x+w; ix++ {
+			idx := (iy * t.img.Stride) + ix*4
+			a := t.img.Pix[idx+3]
+			if a > 0 && a < 255 {
+				t.img.Pix[idx+0] = 0
+				t.img.Pix[idx+1] = 0
+				t.img.Pix[idx+2] = 0
+				t.img.Pix[idx+3] = 255
+			}
+		}
+	}
 }
 
 // getGlyph returns the glyph structure for the given rune, caching it if

@@ -74,7 +74,8 @@ func Main() {
 	}
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
 	console = newConsoleWidget(app)
-	console.printf("%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
+	console.printf([3]uint8{0, 255, 255},
+		"%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
 	console.add(app)
 	app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
 	app.CrosshairVisible = true
@@ -109,7 +110,7 @@ func Main() {
 			cameraInput(cam)
 		}
 		// TODO REMOVE
-		app.AddDebugLine("Position: X=%d Y=%d Z=%d",
+		app.AddDebugLine([3]uint8{255, 255, 0}, "Position: X=%d Y=%d Z=%d",
 			int(cam.Position[0]),
 			int(cam.Position[1]),
 			int(cam.Position[2]),
