@@ -208,14 +208,14 @@ func (a *App) Draw(c *Camera) {
 	a.pRGBFB.use()
 	gl.UniformMatrix4fv(int32(a.pRGBFB.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
-	if a.ChunkBoundsVisible {
-		for _, m := range a.cubeMeshes {
-			mt := c.TransformMatrix()
-			gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false,
-				&mt[0])
-			m.m.drawAABB(a.pRGBFB)
-		}
-	}
+	// if a.ChunkBoundsVisible {
+	// 	for _, m := range a.cubeMeshes {
+	// 		mt := c.TransformMatrix()
+	// 		gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false,
+	// 			&mt[0])
+	// 		m.m.drawAABB(a.pRGBFB)
+	// 	}
+	// }
 	mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
 	gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false, &mt[0])
 	a.axis.draw(a.pRGBFB)

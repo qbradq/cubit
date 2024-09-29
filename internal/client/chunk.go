@@ -4,7 +4,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
 	"github.com/qbradq/cubit/internal/cubit"
-	"github.com/qbradq/cubit/internal/vox"
 )
 
 // voxD is a voxel description encoding position, orientation, and model.
@@ -17,7 +16,6 @@ type voxD struct {
 // Chunk represents a 16x16x16 chunk of space.
 type Chunk struct {
 	pos   cubit.Position  // Position representing the global location of the chunk
-	aabb  vox.AABB        // Bounding box of the chunk
 	o     c3d.Orientation // Cached orientation value for the chunk
 	mesh  *c3d.CubeMesh   // Mesh object used to build the vbo data for the cube mesh
 	vox   []voxD          // List of all vox models to draw
@@ -33,18 +31,6 @@ func NewChunk(p cubit.Position) *Chunk {
 	ret.pos.X *= 16
 	ret.pos.Y *= 16
 	ret.pos.Z *= 16
-	ret.aabb = vox.AABB{
-		Min: mgl32.Vec3{
-			float32(ret.pos.X),
-			float32(ret.pos.Y),
-			float32(ret.pos.Z),
-		},
-		Max: mgl32.Vec3{
-			float32(ret.pos.X + 16),
-			float32(ret.pos.Y + 16),
-			float32(ret.pos.Z + 16),
-		},
-	}
 	ret.o = *c3d.NewOrientation(mgl32.Vec3{
 		float32(ret.pos.X) + float32(16/2),
 		float32(ret.pos.Y) + float32(16/2),
@@ -69,7 +55,7 @@ func (c *Chunk) compile(w *cubit.World) {
 		c.mesh.AddFace(byte(p.X), byte(p.Y), byte(p.Z), side, cube.Faces[side])
 	}
 	if c.mesh == nil {
-		c.mesh = c3d.NewCubeMesh(c.aabb)
+		c.mesh = c3d.NewCubeMesh()
 	}
 	c.mesh.Reset()
 	c.vox = c.vox[:0]

@@ -2,7 +2,6 @@ package cubit
 
 import (
 	"github.com/qbradq/cubit/internal/c3d"
-	"github.com/qbradq/cubit/internal/vox"
 )
 
 // Cell encodes the cube or vox contained in a single Cell along with the
@@ -44,15 +43,42 @@ func (l Cell) Decompose() (c *Cube, v *Vox, f c3d.Facing) {
 	return
 }
 
+// ChunkRef references a single chunk within the world.
+type ChunkRef uint32
+
+// InvalidChunkRef is the invalid value for ChunkRef.
+const InvalidChunkRef ChunkRef = 0xFFFFFFFF
+
+// NewChunkRef creates a new chunk reference with the given chunk coordinates.
+func NewChunkRef(p Position) ChunkRef {
+	x := p.X + (2^14)/2
+	y := p.Y + (2^14)/2
+	z := p.Z + (2^4)/2
+	if x < 0 || x >= 2^14 || y < 0 || y >= 2^14 || z < 0 || z >= 2^4 {
+		return InvalidChunkRef
+	}
+	return ChunkRef(
+		(x & 0b00000000000000000011111111111111) |
+			((y & 0b00000000000000000011111111111111) << 14) |
+			((y & 0b00000000000000000000000000001111) << 28),
+	)
+}
+
+// NewChunkRefForWorldPosition creates a new chunk reference with the chunk that
+// contains the given world coordinates.
+func NewChunkRefForWorldPosition(p Position) ChunkRef {
+	return NewChunkRef(p.Div(Pos(16, 16, 16)))
+}
+
 // World manages the state of the entire world.
 type World struct {
-	sm *vox.SparseMatrix[Cell] // Matrix of all cells
+	chunks map[ChunkRef]*Chunk
 }
 
 // NewWorld returns a new World object read for use.
 func NewWorld() *World {
 	return &World{
-		sm: vox.NewSparseMatrix(3, CellInvalid),
+		chunks: map[ChunkRef]*Chunk{},
 	}
 }
 
@@ -61,36 +87,50 @@ func (w *World) TestGen() {
 	rStone := GetCubeDef("/cubit/stone")
 	rGrass := GetCubeDef("/cubit/grass")
 	vWindow := GetVoxByPath("/cubit/window0")
-	rect := func(min, max [3]int, r Cell) {
-		for iy := min[1]; iy <= max[1]; iy++ {
-			for iz := min[2]; iz <= max[2]; iz++ {
-				for ix := min[0]; ix <= max[0]; ix++ {
+	rect := func(min, max Position, r Cell) {
+		for iy := min.Y; iy <= max.Y; iy++ {
+			for iz := min.Z; iz <= max.Z; iz++ {
+				for ix := min.X; ix <= max.X; ix++ {
 					w.SetCell(Pos(ix, iy, iz), r)
 				}
 			}
 		}
 	}
 	// Ground
-	rect([3]int{0, 0, 0}, [3]int{15, 0, 15}, CellForCube(rGrass, c3d.North))
+	rect(Pos(0, 0, 0), Pos(15, 0, 15), CellForCube(rGrass, c3d.North))
 	// Walls
-	rect([3]int{4, 1, 4}, [3]int{4, 3, 10}, CellForCube(rStone, c3d.North))
-	rect([3]int{10, 1, 4}, [3]int{10, 3, 10}, CellForCube(rStone, c3d.North))
-	rect([3]int{4, 1, 4}, [3]int{10, 3, 4}, CellForCube(rStone, c3d.North))
-	rect([3]int{4, 1, 10}, [3]int{10, 3, 10}, CellForCube(rStone, c3d.North))
+	rect(Pos(4, 1, 4), Pos(4, 3, 10), CellForCube(rStone, c3d.North))
+	rect(Pos(10, 1, 4), Pos(10, 3, 10), CellForCube(rStone, c3d.North))
+	rect(Pos(4, 1, 4), Pos(10, 3, 4), CellForCube(rStone, c3d.North))
+	rect(Pos(4, 1, 10), Pos(10, 3, 10), CellForCube(rStone, c3d.North))
 	// Ceiling
-	rect([3]int{4, 4, 4}, [3]int{10, 4, 10}, CellForCube(rStone, c3d.North))
+	rect(Pos(4, 4, 4), Pos(10, 4, 10), CellForCube(rStone, c3d.North))
 	// Window and doorway
 	w.SetCell(Pos(6, 1, 10), CellInvalid)
 	w.SetCell(Pos(6, 2, 10), CellInvalid)
 	w.SetCell(Pos(8, 2, 10), CellForVox(vWindow.Ref, c3d.North))
 }
 
-// SetCell sets the cube and facing at the given position in the world.
-func (w *World) SetCell(p Position, r Cell) {
-	w.sm.Set(p.X, p.Y, p.Z, r)
+// SetCell sets the cube and facing at the given position in the world. Returns
+// true if the voxel was changed.
+func (w *World) SetCell(p Position, v Cell) bool {
+	cp := p.Div(Pos(16, 16, 16))
+	cr := NewChunkRef(cp)
+	c := w.chunks[cr]
+	if c == nil {
+		c = NewChunk(p, CellInvalid)
+		w.chunks[cr] = c
+	}
+	return c.Set(p, v)
 }
 
 // GetCell returns the cell value at the given position in the world.
 func (w *World) GetCell(p Position) Cell {
-	return w.sm.Get(p.X, p.Y, p.Z)
+	cp := p.Div(Pos(16, 16, 16))
+	cr := NewChunkRef(cp)
+	c := w.chunks[cr]
+	if c == nil {
+		return CellInvalid
+	}
+	return c.Get(p)
 }
