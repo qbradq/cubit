@@ -60,6 +60,7 @@ func NewWorld() *World {
 func (w *World) TestGen() {
 	rStone := GetCubeDef("/cubit/stone")
 	rGrass := GetCubeDef("/cubit/grass")
+	vWindow := GetVoxByPath("/cubit/window0")
 	rect := func(min, max [3]int, r Cell) {
 		for iy := min[1]; iy <= max[1]; iy++ {
 			for iz := min[2]; iz <= max[2]; iz++ {
@@ -81,7 +82,7 @@ func (w *World) TestGen() {
 	// Window and doorway
 	w.SetCell(Pos(6, 1, 10), CellInvalid)
 	w.SetCell(Pos(6, 2, 10), CellInvalid)
-	w.SetCell(Pos(8, 2, 10), CellInvalid)
+	w.SetCell(Pos(8, 2, 10), CellForVox(vWindow.Ref, c3d.North))
 }
 
 // SetCell sets the cube and facing at the given position in the world.

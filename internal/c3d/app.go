@@ -225,8 +225,6 @@ func (a *App) Draw(c *Camera) {
 		mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
 			&mt[0])
-		nt := mt.Inv().Transpose()
-		gl.UniformMatrix4fv(a.pCubeMesh.uni("uNormalMatrix"), 1, false, &nt[0])
 		m.m.draw(a.pCubeMesh)
 	}
 	// Draw voxel models
@@ -236,8 +234,6 @@ func (a *App) Draw(c *Camera) {
 	for _, v := range a.voxelMeshes {
 		mt := c.TransformMatrix().Mul4(v.o.TransformMatrix())
 		gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelViewMatrix"), 1, false, &mt[0])
-		nt := mt.Inv().Transpose()
-		gl.UniformMatrix4fv(a.pVoxelMesh.uni("uNormalMatrix"), 1, false, &nt[0])
 		v.m.draw(a.pVoxelMesh)
 	}
 	// Draw UI elements, tiles layer

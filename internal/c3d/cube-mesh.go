@@ -8,6 +8,8 @@ import (
 const invalidVAO = 0xFFFFFFFF
 const invalidVBO = 0xFFFFFFFF
 
+var facingLightLevels = [6]byte{127, 223, 191, 191, 255, 95}
+
 // CubeMesh is a utility struct that builds cube-based meshes.
 type CubeMesh struct {
 	AABB       vox.AABB  // AABB for the mesh
@@ -17,7 +19,7 @@ type CubeMesh struct {
 	count      int32     // Vertex count
 	vboCurrent bool      // If false, the VBO needs to be reuploaded.
 	d          []byte    // Raw mesh data
-	vbuf       [8]byte   // Vertex data buffer
+	vbuf       [6]byte   // Vertex data buffer
 }
 
 // NewCubeMesh constructs a new CubeMesh object ready for use.
@@ -38,9 +40,7 @@ func (m *CubeMesh) vert(x, y, z, u, v byte, f Facing) {
 	d[2] = z
 	d[3] = u
 	d[4] = v
-	d[5] = facingNormalCompressed[f][0]
-	d[6] = facingNormalCompressed[f][1]
-	d[7] = facingNormalCompressed[f][2]
+	d[5] = facingLightLevels[f]
 	m.d = append(m.d, d...)
 	m.count++
 }
@@ -74,7 +74,7 @@ func (m *CubeMesh) draw(p *program) {
 		gl.GenVertexArrays(1, &m.vao)
 	}
 	if m.vbo == invalidVBO {
-		var stride int32 = 3*1 + 2*1 + 3*1
+		var stride int32 = 3*1 + 2*1 + 1*1
 		var offset int = 0
 		gl.GenBuffers(1, &m.vbo)
 		gl.BindVertexArray(m.vao)
@@ -87,10 +87,10 @@ func (m *CubeMesh) draw(p *program) {
 			2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
 		gl.EnableVertexAttribArray(uint32(p.attr("aVertexUV")))
 		offset += 2 * 1
-		gl.VertexAttribPointerWithOffset(uint32(p.attr("aVertexNormal")),
-			3, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-		gl.EnableVertexAttribArray(uint32(p.attr("aVertexNormal")))
-		offset += 3 * 1
+		gl.VertexAttribPointerWithOffset(uint32(p.attr("aVertexLightLevel")),
+			1, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(p.attr("aVertexLightLevel")))
+		offset += 1 * 1
 	}
 	if !m.vboCurrent {
 		if len(m.d) > 0 {

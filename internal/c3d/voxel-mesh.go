@@ -27,9 +27,7 @@ func (m *VoxelMesh) vert(x, y, z uint8, c [4]uint8, f Facing) {
 	m.d = append(m.d,
 		x, y, z,
 		c[0], c[1], c[2],
-		facingNormalCompressed[f][0],
-		facingNormalCompressed[f][1],
-		facingNormalCompressed[f][2],
+		facingLightLevels[f],
 	)
 	m.count++
 }
@@ -65,7 +63,7 @@ func (m *VoxelMesh) draw(p *program) {
 	if m.vbo == invalidVBO {
 		// Note: we have to do this on-demand because voxel meshes are loaded
 		// during the mod loading phase, before the GL is initialized.
-		var stride int32 = 3*1 + 3*1 + 3*1
+		var stride int32 = 3*1 + 3*1 + 1*1
 		var offset int = 0
 		gl.GenBuffers(1, &m.vbo)
 		gl.BindVertexArray(m.vao)
@@ -78,10 +76,10 @@ func (m *VoxelMesh) draw(p *program) {
 			3, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
 		gl.EnableVertexAttribArray(uint32(p.attr("aVertexColor")))
 		offset += 3 * 1
-		gl.VertexAttribPointerWithOffset(uint32(p.attr("aVertexNormal")),
-			3, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-		gl.EnableVertexAttribArray(uint32(p.attr("aVertexNormal")))
-		offset += 3 * 1
+		gl.VertexAttribPointerWithOffset(uint32(p.attr("aVertexLightLevel")),
+			1, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(p.attr("aVertexLightLevel")))
+		offset += 1 * 1
 	}
 	if !m.vboCurrent {
 		if len(m.d) != 0 {
