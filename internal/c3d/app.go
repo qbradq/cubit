@@ -7,43 +7,28 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-// voxelMeshRef refers to a voxel mesh pointer and the orientation it should
-// be drawn with.
-type voxelMeshRef struct {
-	m *VoxelMesh
-	o Orientation
-}
-
-// cubeMeshRef refers to a cube mesh pointer and the orientation it should
-// be drawn with.
-type cubeMeshRef struct {
-	m *CubeMesh
-	o Orientation
-}
-
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	CursorVisible      bool            // If true, draw the cursor
-	CrosshairVisible   bool            // If true, draw the crosshair
-	DebugTextVisible   bool            // If true, draw the debug text
-	ChunkBoundsVisible bool            // If true, draws the chunk bounds
-	cubeMeshes         []cubeMeshRef   // List of cube meshes to draw along with orientation
-	voxelMeshes        []voxelMeshRef  // List of voxel meshes to draw along with orientation
-	uiMeshes           []*UIMesh       // List of UI meshes to draw
-	cursor             *UIMesh         // Cursor mesh
-	crosshair          *UIMesh         // Crosshair mesh
-	axis               *LineMesh       // Debug axis indicator
-	pRGBFB             *program        // RGB with no lighting
-	pVoxelMesh         *program        // RGB
-	pCubeMesh          *program        // Face atlas texturing
-	pText              *program        // Text rendering
-	pUI                *program        // UI tile rendering
-	faces              *FaceAtlas      // Face atlas to use for cube mesh rendering
-	tiles              *FaceAtlas      // Face atlas to use for ui tile rendering
-	fm                 *fontManager    // Font manager for the application
-	debugLines         []ColoredString // Lines for the debug messages
-	debugText          *TextMesh       // Debug text
+	CursorVisible      bool                   // If true, draw the cursor
+	CrosshairVisible   bool                   // If true, draw the crosshair
+	DebugTextVisible   bool                   // If true, draw the debug text
+	ChunkBoundsVisible bool                   // If true, draws the chunk bounds
+	chunkDDs           []*ChunkDrawDescriptor // List of chunks to drew
+	uiMeshes           []*UIMesh              // List of UI meshes to draw
+	cursor             *UIMesh                // Cursor mesh
+	crosshair          *UIMesh                // Crosshair mesh
+	axis               *LineMesh              // Debug axis indicator
+	pRGBFB             *program               // RGB with no lighting
+	pVoxelMesh         *program               // RGB
+	pCubeMesh          *program               // Face atlas texturing
+	pText              *program               // Text rendering
+	pUI                *program               // UI tile rendering
+	faces              *FaceAtlas             // Face atlas to use for cube mesh rendering
+	tiles              *FaceAtlas             // Face atlas to use for ui tile rendering
+	fm                 *fontManager           // Font manager for the application
+	debugLines         []ColoredString        // Lines for the debug messages
+	debugText          *TextMesh              // Debug text
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -63,6 +48,8 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	gl.Uniform1fv(ret.pVoxelMesh.uni("uLightLevels"),
+		int32(len(voxelLightLevels)), &voxelLightLevels[0])
 	// cube_mesh.glsl
 	ret.pCubeMesh, err = loadProgram("cube-mesh")
 	if err != nil {
@@ -142,40 +129,6 @@ func (a *App) SetCrosshair(f FaceIndex, l uint16) {
 	a.crosshair.Layer = l
 }
 
-// AddVoxelMesh adds the voxel mesh to the list to render. The value of o is
-// copied internally, so o may be reused after the call to AddVoxelMesh.
-func (a *App) AddVoxelMesh(m *VoxelMesh, o *Orientation) {
-	a.voxelMeshes = append(a.voxelMeshes, voxelMeshRef{m: m, o: *o})
-}
-
-// RemoveVoxelMesh removes the passed voxel mesh from the renderer.
-func (a *App) RemoveVoxelMesh(m *VoxelMesh) {
-	for i := 0; i < len(a.voxelMeshes); i++ {
-		if a.voxelMeshes[i].m == m {
-			a.voxelMeshes[i] = a.voxelMeshes[len(a.voxelMeshes)-1]
-			a.voxelMeshes = a.voxelMeshes[:len(a.voxelMeshes)]
-			return
-		}
-	}
-}
-
-// AddCubeMesh adds the cube mesh to the list to render. The value of o is
-// copied internally, so o may be reused after the call to AddCubeMesh.
-func (a *App) AddCubeMesh(m *CubeMesh, o *Orientation) {
-	a.cubeMeshes = append(a.cubeMeshes, cubeMeshRef{m: m, o: *o})
-}
-
-// RemoveCubeMesh removes the passed cube mesh from the renderer.
-func (a *App) RemoveCubeMesh(m *CubeMesh) {
-	for i := 0; i < len(a.cubeMeshes); i++ {
-		if a.cubeMeshes[i].m == m {
-			a.cubeMeshes[i] = a.cubeMeshes[len(a.cubeMeshes)-1]
-			a.cubeMeshes = a.cubeMeshes[:len(a.cubeMeshes)]
-			return
-		}
-	}
-}
-
 // NewUIMesh creates and returns a new UIMesh.
 func (a *App) NewUIMesh() *UIMesh {
 	return newUIMesh(a.fm, a.pUI, a.pText)
@@ -186,12 +139,28 @@ func (a *App) AddUIMesh(m *UIMesh) {
 	a.uiMeshes = append(a.uiMeshes, m)
 }
 
-// RemoveUIMesh removes the passed cube mesh from the renderer.
+// RemoveUIMesh removes the passed UI mesh from the renderer.
 func (a *App) RemoveUIMesh(m *UIMesh) {
 	for i := 0; i < len(a.uiMeshes); i++ {
 		if a.uiMeshes[i] == m {
 			a.uiMeshes[i] = a.uiMeshes[len(a.uiMeshes)-1]
 			a.uiMeshes = a.uiMeshes[:len(a.uiMeshes)]
+			return
+		}
+	}
+}
+
+// AddChunkDD adds the chunk draw descriptor to the list to draw.
+func (a *App) AddChunkDD(d *ChunkDrawDescriptor) {
+	a.chunkDDs = append(a.chunkDDs, d)
+}
+
+// RemoveChunkDD removes the chunk draw descriptor by ID.
+func (a *App) RemoveChunkDD(id uint32) {
+	for i := 0; i < len(a.chunkDDs); i++ {
+		if a.chunkDDs[i].ID == id {
+			a.chunkDDs[i] = a.chunkDDs[len(a.chunkDDs)-1]
+			a.chunkDDs = a.chunkDDs[:len(a.chunkDDs)]
 			return
 		}
 	}
@@ -224,20 +193,43 @@ func (a *App) Draw(c *Camera) {
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
 	a.faces.bind(a.pCubeMesh)
-	for _, m := range a.cubeMeshes {
-		mt := c.TransformMatrix().Mul4(m.o.TransformMatrix())
+	for _, d := range a.chunkDDs {
+		if d.CubeDD.Mesh == nil {
+			continue
+		}
+		mt := c.TransformMatrix().Mul4(mgl32.Translate3D(
+			d.CubeDD.Position[0],
+			d.CubeDD.Position[1],
+			d.CubeDD.Position[2],
+		))
 		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
 			&mt[0])
-		m.m.draw(a.pCubeMesh)
+		d.CubeDD.Mesh.draw(a.pCubeMesh)
 	}
 	// Draw voxel models
 	a.pVoxelMesh.use()
+	gl.Uniform3f(a.pVoxelMesh.uni("uRotationPoint"), 8, 8, 8)
 	gl.UniformMatrix4fv(int32(a.pVoxelMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
-	for _, v := range a.voxelMeshes {
-		mt := c.TransformMatrix().Mul4(v.o.TransformMatrix())
-		gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelViewMatrix"), 1, false, &mt[0])
-		v.m.draw(a.pVoxelMesh)
+	for _, d := range a.chunkDDs {
+		for _, v := range d.VoxelDDs {
+			if v.Mesh == nil {
+				continue
+			}
+			o := *FacingToOrientation[v.Facing]
+			o.Position = v.Position.Add(v.CenterPoint.Mul(VoxelScale))
+			mt := c.TransformMatrix().Mul4(o.TransformMatrix())
+			gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelViewMatrix"), 1, false, &mt[0])
+			gl.Uniform3f(a.pVoxelMesh.uni("uRotationPoint"),
+				v.CenterPoint[0],
+				v.CenterPoint[1],
+				v.CenterPoint[2],
+			)
+			gl.Uniform1i(a.pVoxelMesh.uni("uFacing"), int32(v.Facing))
+			gl.Uniform1fv(a.pVoxelMesh.uni("uLightLevels"),
+				int32(len(voxelLightLevels)), &voxelLightLevels[0])
+			v.Mesh.draw(a.pVoxelMesh)
+		}
 	}
 	// Draw UI elements, tiles layer
 	gl.Clear(gl.DEPTH_BUFFER_BIT)

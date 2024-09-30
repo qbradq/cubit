@@ -118,7 +118,7 @@ func (w *World) SetCell(p Position, v Cell) bool {
 	cr := NewChunkRef(cp)
 	c := w.chunks[cr]
 	if c == nil {
-		c = NewChunk(p, CellInvalid)
+		c = newChunk(p, CellInvalid)
 		w.chunks[cr] = c
 	}
 	return c.Set(p, v)
@@ -133,4 +133,10 @@ func (w *World) GetCell(p Position) Cell {
 		return CellInvalid
 	}
 	return c.Get(p)
+}
+
+// GetChunkByRef returns the chunk for the given chunk reference, or nil if no
+// chunk exists.
+func (w *World) GetChunkByRef(r ChunkRef) *Chunk {
+	return w.chunks[r]
 }

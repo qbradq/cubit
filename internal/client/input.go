@@ -59,6 +59,13 @@ func NewInput(win *glfw.Window, screenSize mgl32.Vec2) *Input {
 	win.SetKeyCallback(ret.keyCallback)
 	win.SetCharCallback(ret.charCallback)
 	win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	win.SetFocusCallback(func(w *glfw.Window, focused bool) {
+		if focused {
+			win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+		} else {
+			win.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+		}
+	})
 	win.SetCursorPosCallback(ret.posCallback)
 	win.SetMouseButtonCallback(ret.mouseButtonCallback)
 	return ret

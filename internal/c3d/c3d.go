@@ -8,6 +8,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// VoxelScale is the scale of a single voxel.
+const VoxelScale float32 = 1.0 / 16.0
+
 // VirtualScreenWidth is the width of the virtual 2D screen in pixels.
 const VirtualScreenWidth int = 320
 
@@ -22,6 +25,30 @@ type NinePatch [9]FaceIndex
 type ColoredString struct {
 	String string   // The string
 	Color  [3]uint8 // The color
+}
+
+// CubeMeshDrawDescriptor describes how and where to draw a cube mesh.
+type CubeMeshDrawDescriptor struct {
+	ID       uint32     // ID
+	Mesh     *CubeMesh  // The mesh to draw
+	Position mgl32.Vec3 // Position of the bottom-north-west corner of the mesh
+}
+
+// VoxelMeshDrawDescriptor describes how and where to draw a cube mesh.
+type VoxelMeshDrawDescriptor struct {
+	ID          uint32     // ID
+	Mesh        *VoxelMesh // The mesh to draw
+	CenterPoint mgl32.Vec3 // Center point of the mesh
+	Position    mgl32.Vec3 // Position of the center point of the voxel mesh
+	Facing      Facing     // Facing of the mesh
+}
+
+// ChunkDrawDescriptor describes how and where to render the static portions of
+// a scene.
+type ChunkDrawDescriptor struct {
+	ID       uint32                     // ID
+	CubeDD   CubeMeshDrawDescriptor     // The draw descriptor for the cube mesh
+	VoxelDDs []*VoxelMeshDrawDescriptor // Draw descriptors for all voxel meshes contained within the chunk
 }
 
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.

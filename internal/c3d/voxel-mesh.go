@@ -4,6 +4,25 @@ import (
 	gl "github.com/go-gl/gl/v3.1/gles2"
 )
 
+var voxelLightLevels = []float32{}
+
+func init() {
+	n := float32(223.0 / 255.0)
+	s := float32(127.0 / 255.0)
+	e := float32(191.0 / 255.0)
+	w := float32(191.0 / 255.0)
+	t := float32(1.0)
+	b := float32(95.0 / 255.0)
+	voxelLightLevels = []float32{
+		n, s, e, w, t, b, // North
+		s, n, w, e, t, b, // South
+		w, e, n, s, t, b, // East
+		e, w, s, n, t, b, // West
+		t, b, e, w, n, s, // Top
+		b, t, e, w, s, n, // Bottom
+	}
+}
+
 // VoxelMesh is a utility struct that builds voxel-based meshes.
 type VoxelMesh struct {
 	vao        uint32 // Vertex Array Object ID
@@ -27,7 +46,7 @@ func (m *VoxelMesh) vert(x, y, z uint8, c [4]uint8, f Facing) {
 	m.d = append(m.d,
 		x, y, z,
 		c[0], c[1], c[2],
-		facingLightLevels[f],
+		byte(f),
 	)
 	m.count++
 }
@@ -76,9 +95,9 @@ func (m *VoxelMesh) draw(p *program) {
 			3, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
 		gl.EnableVertexAttribArray(uint32(p.attr("aVertexColor")))
 		offset += 3 * 1
-		gl.VertexAttribPointerWithOffset(uint32(p.attr("aVertexLightLevel")),
-			1, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
-		gl.EnableVertexAttribArray(uint32(p.attr("aVertexLightLevel")))
+		gl.VertexAttribPointerWithOffset(uint32(p.attr("aVertexFacing")),
+			1, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(p.attr("aVertexFacing")))
 		offset += 1 * 1
 	}
 	if !m.vboCurrent {
