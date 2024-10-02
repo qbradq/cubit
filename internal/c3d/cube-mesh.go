@@ -7,7 +7,7 @@ import (
 const invalidVAO = 0xFFFFFFFF
 const invalidVBO = 0xFFFFFFFF
 
-var facingLightLevels = [6]byte{127, 223, 191, 191, 255, 95}
+var facingLightLevels = [6]byte{223, 223, 191, 191, 255, 127}
 
 // CubeMesh is a utility struct that builds cube-based meshes.
 type CubeMesh struct {

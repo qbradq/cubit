@@ -84,9 +84,9 @@ func NewWorld() *World {
 
 // TODO DEBUG REMOVE
 func (w *World) TestGen() {
-	rStone := GetCubeDef("/cubit/stone")
-	rGrass := GetCubeDef("/cubit/grass")
-	vWindow := GetVoxByPath("/cubit/window0")
+	rStone := GetCubeDef("/cubit/cubes/stone")
+	rGrass := GetCubeDef("/cubit/cubes/grass")
+	vWindow := GetVoxByPath("/cubit/vox/window0")
 	rect := func(min, max Position, r Cell) {
 		for iy := min.Y; iy <= max.Y; iy++ {
 			for iz := min.Z; iz <= max.Z; iz++ {

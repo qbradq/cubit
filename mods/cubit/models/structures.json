@@ -1,0 +1,8 @@
+{
+    "door0": {
+        "root": {
+            "mesh": "/cubit/parts/structures/door0",
+            "centerPoint": [2, 0, 2]
+        }
+    }
+}

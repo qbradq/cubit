@@ -8,11 +8,11 @@ var voxelLightLevels = []float32{}
 
 func init() {
 	n := float32(223.0 / 255.0)
-	s := float32(127.0 / 255.0)
+	s := float32(223.0 / 255.0)
 	e := float32(191.0 / 255.0)
 	w := float32(191.0 / 255.0)
 	t := float32(1.0)
-	b := float32(95.0 / 255.0)
+	b := float32(127.0 / 255.0)
 	voxelLightLevels = []float32{
 		n, s, e, w, t, b, // North
 		s, n, w, e, t, b, // South

@@ -72,6 +72,8 @@ func ReloadModInfo() error {
 	voxIndex = map[string]*Vox{}
 	Faces = c3d.NewFaceAtlas()
 	UITiles = c3d.NewFaceAtlas()
+	partsMeshMap = map[string]*c3d.VoxelMesh{}
+	modelsMap = map[string]*ModelDescriptor{}
 	dirs, err := os.ReadDir("mods")
 	if err != nil {
 		return err
@@ -117,6 +119,12 @@ func LoadMods(mods ...string) error {
 		return err
 	}
 	if err := stage(func(m *Mod) error { return m.loadVox() }); err != nil {
+		return err
+	}
+	if err := stage(func(m *Mod) error { return m.loadParts() }); err != nil {
+		return err
+	}
+	if err := stage(func(m *Mod) error { return m.loadModels() }); err != nil {
 		return err
 	}
 	return nil
@@ -240,7 +248,7 @@ func (m *Mod) loadCubes() error {
 			return m.wrap("parsing cube file %s", err, path)
 		}
 		for k, cube := range cubes {
-			cube.ID = "/" + m.ID + "/" + k
+			cube.ID = "/" + m.ID + "/cubes/" + k
 			// Convert mod-relative face references to global
 			for i := range cube.Faces {
 				fi, found := m.faceMap[cube.Faces[i]]
@@ -258,7 +266,7 @@ func (m *Mod) loadCubes() error {
 	})
 }
 
-// loadVox loads all .vox models from the mod.
+// loadVox loads all .vox cell models.
 func (m *Mod) loadVox() error {
 	return fs.WalkDir(m.f, "vox", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -275,8 +283,7 @@ func (m *Mod) loadVox() error {
 		}
 		ext := filepath.Ext(path)
 		ext = strings.ToLower(ext)
-		ns := filepath.Base(path)
-		ns = ns[:len(ns)-len(ext)]
+		ns := path[:len(path)-len(ext)]
 		if ext != ".vox" {
 			return nil
 		}
@@ -285,10 +292,14 @@ func (m *Mod) loadVox() error {
 		if err != nil {
 			return m.wrap("opening vox file %s", err, path)
 		}
-		if voxFile, err := util.NewVoxFromReader(f); err != nil {
+		if vf, err := util.NewVoxFromReader(f); err != nil {
 			return m.wrap("processing vox file %s", err, path)
 		} else {
-			RegisterVox(modPath, NewVox(voxFile))
+			if vf.Width != 16 || vf.Height != 16 || vf.Depth != 16 {
+				return m.wrap("validating vox file %s",
+					errors.New("vox models must be 16x16x16"), path)
+			}
+			registerVox(modPath, NewVox(vf))
 		}
 		return nil
 	})
@@ -369,4 +380,81 @@ func (m *Mod) loadUIPage(n uint8, r io.Reader) error {
 		}
 	}
 	return nil
+}
+
+// loadParts loads all .vox parts from the mod.
+func (m *Mod) loadParts() error {
+	return fs.WalkDir(m.f, "parts", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return m.wrap("walking parts directory, path=%s", err, path)
+		}
+		if len(path) < 1 {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		ext = strings.ToLower(ext)
+		ns := path[:len(path)-len(ext)]
+		if ext != ".vox" {
+			return nil
+		}
+		modPath := "/" + m.ID + "/" + ns
+		f, err := m.f.Open(path)
+		if err != nil {
+			return m.wrap("opening vox file %s", err, path)
+		}
+		if vf, err := util.NewVoxFromReader(f); err != nil {
+			return m.wrap("processing vox file %s", err, path)
+		} else {
+			return registerPartMesh(modPath, c3d.BuildVoxelMesh(vf))
+		}
+	})
+}
+
+// loadModels loads all model definitions for the mod.
+func (m *Mod) loadModels() error {
+	return fs.WalkDir(m.f, "models", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return m.wrap("walking models directory, path=%s", err, path)
+		}
+		if len(path) < 1 {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		ext = strings.ToLower(ext)
+		ns := path[:len(path)-len(ext)]
+		if ext != ".json" {
+			return nil
+		}
+		modPath := "/" + m.ID + "/" + ns
+		f, err := m.f.Open(path)
+		if err != nil {
+			return m.wrap("opening model file %s", err, path)
+		}
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return m.wrap("reading model file %s", err, path)
+		}
+		mds := map[string]*ModelDescriptor{}
+		if err := json.Unmarshal(data, &mds); err != nil {
+			return m.wrap("unmarshaling model file %s", err, path)
+		}
+		for k, md := range mds {
+			if err := registerModel(modPath+"/"+k, md); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

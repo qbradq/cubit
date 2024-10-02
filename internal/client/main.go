@@ -1,6 +1,7 @@
 package client
 
 import (
+	"math"
 	"runtime"
 	"time"
 
@@ -85,28 +86,27 @@ func Main() {
 	// World setup
 	world = cubit.NewWorld()
 	world.TestGen()
-	vox := cubit.GetVoxByPath("/cubit/debug")
-	// chunk := NewChunk(cubit.Pos(0, 0, 0))
-	// chunk.Update()
-	// app.AddChunkDD(chunk.cdd)
-	cdd := c3d.ChunkDrawDescriptor{
-		ID: 1,
-		CubeDD: c3d.CubeMeshDrawDescriptor{
-			ID: 1,
-		},
-		VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{},
-	}
-	for f := c3d.North; f <= c3d.Bottom; f++ {
-		vmdd := &c3d.VoxelMeshDrawDescriptor{
-			ID:          1 + uint32(f),
-			Mesh:        vox.Mesh,
-			CenterPoint: mgl32.Vec3{8, 8, 8},
-			Position:    mgl32.Vec3{float32(f), 0, 0},
-			Facing:      f,
-		}
-		cdd.VoxelDDs = append(cdd.VoxelDDs, vmdd)
-	}
-	app.AddChunkDD(&cdd)
+	chunk := NewChunk(cubit.Pos(0, 0, 0))
+	chunk.Update()
+	app.AddChunkDD(chunk.cdd)
+	// app.AddChunkDD(&c3d.ChunkDrawDescriptor{
+	// 	ID: 1,
+	// 	VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{
+	// 		{
+	// 			ID:   1,
+	// 			Mesh: cubit.GetVoxByPath("/cubit/vox/debug").Mesh,
+	// 		},
+	// 	},
+	// })
+	model := cubit.NewModel("/cubit/models/structures/door0")
+	model.DrawDescriptor.Orientation.Translate(mgl32.Vec3{6, 1, 10})
+	app.AddModelDD(model.DrawDescriptor)
+	// app.AddModelDD(&c3d.ModelDrawDescriptor{
+	// 	ID: 1,
+	// 	Root: &c3d.Part{
+	// 		Mesh: cubit.GetPartMesh("/cubit/models/structures/door0"),
+	// 	},
+	// })
 	// cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
 	// cam := c3d.NewCamera(mgl32.Vec3{7, 3, 7})
 	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
@@ -121,6 +121,7 @@ func Main() {
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
 		console.update()
+		model.DrawDescriptor.Orientation.Yaw(math.Pi * 2 * dt)
 		// Handle input
 		if input.WasPressed("debug") {
 			app.DebugTextVisible = !app.DebugTextVisible

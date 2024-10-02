@@ -10,10 +10,29 @@ import (
 
 const minVoxFileVersion uint32 = 150
 
-// Vox represents the contents of a .vox file in a generic format.
+// Vox represents the contents of a .vox file in a generic format. The internal
+// voxels are laid out with Z being the up axis and with the Y axis facing
+// forward.
 type Vox struct {
 	Width, Height, Depth int
 	Voxels               [][4]uint8
+}
+
+// Get implements the c3d.VoxelSource interface.
+func (v *Vox) Get(x, y, z int) [4]uint8 {
+	sx := x
+	sy := v.Height - (z + 1)
+	sz := y
+	if sx < 0 || sx >= v.Width || sy < 0 || sy >= v.Height || sz < 0 ||
+		sz >= v.Depth {
+		return [4]uint8{0, 0, 0, 0}
+	}
+	return v.Voxels[sz*v.Width*v.Height+sy*v.Width+sx]
+}
+
+// Dimensions implements the c3d.VoxelSource interface.
+func (v *Vox) Dimensions() (w, h, d int) {
+	return v.Width, v.Depth, v.Height
 }
 
 // NewVoxFromReader returns a new Vox structure with the contents loaded from
@@ -72,8 +91,8 @@ func NewVoxFromReader(r io.Reader) (*Vox, error) {
 			sizeSeen = true
 			cr := bytes.NewReader(c.data)
 			ret.Width = int(GetUint32(cr))
-			ret.Depth = int(GetUint32(cr))
 			ret.Height = int(GetUint32(cr))
+			ret.Depth = int(GetUint32(cr))
 		case "XYZI":
 			if voxSeen {
 				return nil, errors.New("multiple XYZI chunks found")
@@ -83,13 +102,11 @@ func NewVoxFromReader(r io.Reader) (*Vox, error) {
 			n := int(GetUint32(cr))
 			xyziBuf = make([]uint8, ret.Width*ret.Height*ret.Depth)
 			for i := 0; i < n; i++ {
-				z := int(GetByte(cr))
 				x := int(GetByte(cr))
 				y := int(GetByte(cr))
+				z := int(GetByte(cr))
 				idx := uint8(GetByte(cr))
-				xyziBuf[y*ret.Width*ret.Depth+
-					((ret.Width-1)-x)*ret.Width+
-					z] = idx
+				xyziBuf[z*ret.Width*ret.Height+y*ret.Width+x] = idx
 			}
 		case "RGBA":
 			cr := bytes.NewReader(c.data)

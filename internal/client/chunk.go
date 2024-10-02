@@ -86,9 +86,8 @@ func (c *Chunk) compile() {
 				if vox != nil {
 					vp := c.p.Add(p)
 					vmdd := &c3d.VoxelMeshDrawDescriptor{
-						ID:          uint32(NewChunkLocationRef(p)),
-						Mesh:        vox.Mesh,
-						CenterPoint: mgl32.Vec3{8, 8, 8},
+						ID:   uint32(NewChunkLocationRef(p)),
+						Mesh: vox.Mesh,
 						Position: mgl32.Vec3{
 							float32(vp.X),
 							float32(vp.Y),

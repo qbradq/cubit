@@ -14,13 +14,15 @@ type App struct {
 	CrosshairVisible   bool                   // If true, draw the crosshair
 	DebugTextVisible   bool                   // If true, draw the debug text
 	ChunkBoundsVisible bool                   // If true, draws the chunk bounds
-	chunkDDs           []*ChunkDrawDescriptor // List of chunks to drew
+	chunkDDs           []*ChunkDrawDescriptor // List of chunks to draw
+	modelDDs           []*ModelDrawDescriptor // List of models to draw
 	uiMeshes           []*UIMesh              // List of UI meshes to draw
 	cursor             *UIMesh                // Cursor mesh
 	crosshair          *UIMesh                // Crosshair mesh
 	axis               *LineMesh              // Debug axis indicator
-	pRGBFB             *program               // RGB with no lighting
-	pVoxelMesh         *program               // RGB
+	pWireFrame         *program               // RGB with no lighting
+	pVoxelMesh         *program               // RGB voxel meshes
+	pModelMesh         *program               // RGB voxel meshes rigged for animation
 	pCubeMesh          *program               // Face atlas texturing
 	pText              *program               // Text rendering
 	pUI                *program               // UI tile rendering
@@ -38,19 +40,24 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 		faces: faces,
 		tiles: tiles,
 	}
-	// rgb_fullbright.glsl
-	ret.pRGBFB, err = loadProgram("rgb-fullbright")
+	// wireframe.glsl
+	ret.pWireFrame, err = loadProgram("wireframe")
 	if err != nil {
 		return nil, err
 	}
-	// rgb.glsl
+	// voxel-mesh.glsl
 	ret.pVoxelMesh, err = loadProgram("voxel-mesh")
 	if err != nil {
 		return nil, err
 	}
 	gl.Uniform1fv(ret.pVoxelMesh.uni("uLightLevels"),
 		int32(len(voxelLightLevels)), &voxelLightLevels[0])
-	// cube_mesh.glsl
+	// model-mesh.glsl
+	ret.pModelMesh, err = loadProgram("model-mesh")
+	if err != nil {
+		return nil, err
+	}
+	// cube-mesh.glsl
 	ret.pCubeMesh, err = loadProgram("cube-mesh")
 	if err != nil {
 		return nil, err
@@ -82,7 +89,7 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 // Delete removes all memory and GPU resources managed by the app.
 func (a *App) Delete() {
 	a.pVoxelMesh.delete()
-	a.pRGBFB.delete()
+	a.pWireFrame.delete()
 	a.pCubeMesh.delete()
 	a.pText.delete()
 }
@@ -166,16 +173,33 @@ func (a *App) RemoveChunkDD(id uint32) {
 	}
 }
 
+// AddModelDD adds the model draw descriptor to the list to draw.
+func (a *App) AddModelDD(d *ModelDrawDescriptor) {
+	a.modelDDs = append(a.modelDDs, d)
+}
+
+// RemoveModelDD removes the model draw descriptor by ID.
+func (a *App) RemoveModelDD(id uint32) {
+	for i := 0; i < len(a.modelDDs); i++ {
+		if a.modelDDs[i].ID == id {
+			a.modelDDs[i] = a.modelDDs[len(a.modelDDs)-1]
+			a.modelDDs = a.modelDDs[:len(a.modelDDs)]
+			return
+		}
+	}
+}
+
 // Draw draws everything with the given camera for 3D space..
 func (a *App) Draw(c *Camera) {
 	// Variable setup
 	pMat := mgl32.Perspective(mgl32.DegToRad(60),
 		float32(VirtualScreenWidth)/float32(VirtualScreenHeight), 0.1, 1000.0)
+	vMat := c.TransformMatrix()
 	// Frame setup
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	// Draw wire frames
-	a.pRGBFB.use()
-	gl.UniformMatrix4fv(int32(a.pRGBFB.uni("uProjectionMatrix")), 1, false,
+	a.pWireFrame.use()
+	gl.UniformMatrix4fv(int32(a.pWireFrame.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
 	// if a.ChunkBoundsVisible {
 	// 	for _, m := range a.cubeMeshes {
@@ -186,8 +210,8 @@ func (a *App) Draw(c *Camera) {
 	// 	}
 	// }
 	mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
-	gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false, &mt[0])
-	a.axis.draw(a.pRGBFB)
+	gl.UniformMatrix4fv(a.pWireFrame.uni("uModelViewMatrix"), 1, false, &mt[0])
+	a.axis.draw(a.pWireFrame)
 	// Draw chunks
 	a.pCubeMesh.use()
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,
@@ -197,7 +221,7 @@ func (a *App) Draw(c *Camera) {
 		if d.CubeDD.Mesh == nil {
 			continue
 		}
-		mt := c.TransformMatrix().Mul4(mgl32.Translate3D(
+		mt := vMat.Mul4(mgl32.Translate3D(
 			d.CubeDD.Position[0],
 			d.CubeDD.Position[1],
 			d.CubeDD.Position[2],
@@ -206,29 +230,38 @@ func (a *App) Draw(c *Camera) {
 			&mt[0])
 		d.CubeDD.Mesh.draw(a.pCubeMesh)
 	}
-	// Draw voxel models
+	// Draw voxel cells
 	a.pVoxelMesh.use()
-	gl.Uniform3f(a.pVoxelMesh.uni("uRotationPoint"), 8, 8, 8)
+	gl.Uniform1fv(a.pVoxelMesh.uni("uLightLevels"),
+		int32(len(voxelLightLevels)), &voxelLightLevels[0])
 	gl.UniformMatrix4fv(int32(a.pVoxelMesh.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
+	gl.UniformMatrix4fv(a.pVoxelMesh.uni("uViewMatrix"), 1, false,
+		&vMat[0])
 	for _, d := range a.chunkDDs {
 		for _, v := range d.VoxelDDs {
 			if v.Mesh == nil {
 				continue
 			}
 			o := *FacingToOrientation[v.Facing]
-			o.Position = v.Position.Add(v.CenterPoint.Mul(VoxelScale))
-			mt := c.TransformMatrix().Mul4(o.TransformMatrix())
-			gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelViewMatrix"), 1, false, &mt[0])
-			gl.Uniform3f(a.pVoxelMesh.uni("uRotationPoint"),
-				v.CenterPoint[0],
-				v.CenterPoint[1],
-				v.CenterPoint[2],
-			)
+			o.pos = v.Position.Add(mgl32.Vec3{8, 8, 8}.Mul(VoxelScale))
+			mm := o.TransformMatrix()
+			gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelMatrix"), 1, false,
+				&mm[0])
 			gl.Uniform1i(a.pVoxelMesh.uni("uFacing"), int32(v.Facing))
-			gl.Uniform1fv(a.pVoxelMesh.uni("uLightLevels"),
-				int32(len(voxelLightLevels)), &voxelLightLevels[0])
 			v.Mesh.draw(a.pVoxelMesh)
+		}
+	}
+	// Draw voxel models
+	a.pModelMesh.use()
+	gl.Uniform1fv(a.pModelMesh.uni("uLightLevels"), 6, &voxelLightLevels[0])
+	gl.UniformMatrix4fv(int32(a.pModelMesh.uni("uProjectionMatrix")), 1, false,
+		&pMat[0])
+	gl.UniformMatrix4fv(a.pModelMesh.uni("uViewMatrix"), 1, false,
+		&vMat[0])
+	for _, d := range a.modelDDs {
+		if d.Root != nil {
+			d.Root.draw(a.pModelMesh, &d.Orientation)
 		}
 	}
 	// Draw UI elements, tiles layer
@@ -261,8 +294,6 @@ func (a *App) Draw(c *Camera) {
 	if a.fm.imgDirty {
 		a.fm.updateAtlasTexture()
 	}
-	pMat = mgl32.Ortho2D(0, float32(VirtualScreenWidth), 0,
-		float32(VirtualScreenHeight))
 	gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false, &pMat[0])
 	a.fm.bind(a.pText)
 	for _, m := range a.uiMeshes {

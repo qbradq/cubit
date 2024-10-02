@@ -24,8 +24,8 @@ func GetVoxByPath(p string) *Vox {
 	return voxIndex[p]
 }
 
-// RegisterVox registers the vox model by path.
-func RegisterVox(p string, v *Vox) {
+// registerVox registers the vox model by path.
+func registerVox(p string, v *Vox) {
 	if _, duplicate := voxIndex[p]; duplicate {
 		panic("duplicate vox path " + p)
 	}
@@ -43,7 +43,7 @@ var voxDefs = []*Vox{}
 // NewVox creates a new Vox object ready to use.
 func NewVox(v *util.Vox) *Vox {
 	return &Vox{
-		Mesh:   c3d.BuildVoxelMesh(v.Voxels, v.Width, v.Height, v.Depth),
+		Mesh:   c3d.BuildVoxelMesh(v),
 		width:  v.Width,
 		height: v.Height,
 		depth:  v.Depth,

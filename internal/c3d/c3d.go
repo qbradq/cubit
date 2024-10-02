@@ -36,11 +36,10 @@ type CubeMeshDrawDescriptor struct {
 
 // VoxelMeshDrawDescriptor describes how and where to draw a cube mesh.
 type VoxelMeshDrawDescriptor struct {
-	ID          uint32     // ID
-	Mesh        *VoxelMesh // The mesh to draw
-	CenterPoint mgl32.Vec3 // Center point of the mesh
-	Position    mgl32.Vec3 // Position of the center point of the voxel mesh
-	Facing      Facing     // Facing of the mesh
+	ID       uint32     // ID
+	Mesh     *VoxelMesh // The mesh to draw
+	Position mgl32.Vec3 // Position of the center point of the voxel mesh
+	Facing   Facing     // Facing of the mesh
 }
 
 // ChunkDrawDescriptor describes how and where to render the static portions of
@@ -49,6 +48,13 @@ type ChunkDrawDescriptor struct {
 	ID       uint32                     // ID
 	CubeDD   CubeMeshDrawDescriptor     // The draw descriptor for the cube mesh
 	VoxelDDs []*VoxelMeshDrawDescriptor // Draw descriptors for all voxel meshes contained within the chunk
+}
+
+// ModelDrawDescriptor describes how and where to render a dynamic model.
+type ModelDrawDescriptor struct {
+	ID          uint32      // ID
+	Orientation Orientation // Origin of the model
+	Root        *Part       // Root part that everything else is attached to
 }
 
 // Facing encodes one of the facing values, North, South, East, West, Up, Down.

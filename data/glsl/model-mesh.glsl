@@ -1,14 +1,13 @@
 [VERTEX]
 #version 100
 
-const float cScale = 1.0/16.0;
-const vec3 cRotationPoint = vec3(8.0, 8.0, 8.0);
+const float scale = 1.0/16.0;
 
 uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
-uniform float uLightLevels[6*6];
-uniform int uFacing;
+uniform vec3 uRotationPoint;
+uniform float uLightLevels[6];
 
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexColor;
@@ -19,10 +18,11 @@ varying float lightLevel;
 
 void main() {
 	color = aVertexColor;
-	lightLevel = uLightLevels[uFacing*6+int(aVertexFacing)];
-	vec3 vp = aVertexPosition-cRotationPoint;
-	gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix *
-		vec4(vp*cScale, 1.0);
+	lightLevel = uLightLevels[int(aVertexFacing)];
+	vec3 vp = aVertexPosition-uRotationPoint;
+	vp = vec3(vec4(vp, 1.0) * uModelMatrix);
+	vp = vp*scale;
+	gl_Position = uProjectionMatrix * uViewMatrix * vec4(vp, 1.0);
 }
 
 [FRAGMENT]
