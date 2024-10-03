@@ -105,57 +105,6 @@ func getGlError(glHandle uint32, checkTrueParam uint32, getObjIvFn getObjIv,
 	return nil
 }
 
-var CubeFacingOffsets = [6][6][3]uint8{
-	{ // North
-		{1, 1, 0}, // TL
-		{0, 1, 0}, // TR
-		{1, 0, 0}, // BL
-		{1, 0, 0}, // BL
-		{0, 1, 0}, // TR
-		{0, 0, 0}, // BR
-	},
-	{ // South
-		{0, 1, 1}, // TL
-		{1, 1, 1}, // TR
-		{0, 0, 1}, // BL
-		{0, 0, 1}, // BL
-		{1, 1, 1}, // TR
-		{1, 0, 1}, // BR
-	},
-	{ // East
-		{1, 1, 1}, // TL
-		{1, 1, 0}, // TR
-		{1, 0, 1}, // BL
-		{1, 0, 1}, // BL
-		{1, 1, 0}, // TR
-		{1, 0, 0}, // BR
-	},
-	{ // West
-		{0, 1, 0}, // TL
-		{0, 1, 1}, // TR
-		{0, 0, 0}, // BL
-		{0, 0, 0}, // BL
-		{0, 1, 1}, // TR
-		{0, 0, 1}, // BR
-	},
-	{ // Top
-		{0, 1, 0}, // TL
-		{1, 1, 0}, // TR
-		{0, 1, 1}, // BL
-		{0, 1, 1}, // BL
-		{1, 1, 0}, // TR
-		{1, 1, 1}, // BR
-	},
-	{ // Bottom
-		{1, 0, 0}, // TL
-		{0, 0, 0}, // TR
-		{1, 0, 1}, // BL
-		{1, 0, 1}, // BL
-		{0, 0, 0}, // TR
-		{0, 0, 1}, // BR
-	},
-}
-
 var cubeFacingOffsetsI = [6][6][3]byte{
 	{ // North
 		{1, 1, 0}, // TL

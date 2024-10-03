@@ -49,23 +49,63 @@ func (m *VoxelMesh) vert(x, y, z uint8, c [4]uint8, f Facing) {
 		byte(f),
 	)
 	m.count++
-}
-
-// AddFace adds a face at the given voxel position with the given facing.
-// The face is scaled down to the size of one world voxel. Pos is the mesh-
-// relative voxel coordinate. Note that the alpha channel is ignored by this
-// function.
-func (m *VoxelMesh) AddFace(p [3]uint8, f Facing, c [4]uint8) {
-	o := CubeFacingOffsets[f]
-	// X              Y                 Z           R     G     B          Normal XYZ
-	m.vert(p[0]+o[0][0], p[1]+o[0][1], p[2]+o[0][2], c, f) // Top left
-	m.vert(p[0]+o[1][0], p[1]+o[1][1], p[2]+o[1][2], c, f) // Top right
-	m.vert(p[0]+o[2][0], p[1]+o[2][1], p[2]+o[2][2], c, f) // Bottom left
-	m.vert(p[0]+o[3][0], p[1]+o[3][1], p[2]+o[3][2], c, f) // Bottom left
-	m.vert(p[0]+o[4][0], p[1]+o[4][1], p[2]+o[4][2], c, f) // Top right
-	m.vert(p[0]+o[5][0], p[1]+o[5][1], p[2]+o[5][2], c, f) // Bottom right
 	m.vboCurrent = false
 }
+
+// // AddFace adds a face at the given voxel position with the given facing.
+// // The face is scaled down to the size of one world voxel. Pos is the mesh-
+// // relative voxel coordinate. Note that the alpha channel is ignored by this
+// // function.
+// func (m *VoxelMesh) AddFace(p, d [3]uint8, f Facing, c [4]uint8) {
+// 	d[0] -= 1
+// 	d[1] -= 1
+// 	d[2] -= 1
+// 	switch f {
+// 	case North:
+// 		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2], c, f) // TL
+// 		m.vert(p[0], p[1]+d[1]+1, p[2], c, f)        // TR
+// 		m.vert(p[0]+d[0]+1, p[1], p[2], c, f)        // BL
+// 		m.vert(p[0]+d[0]+1, p[1], p[2], c, f)        // BL
+// 		m.vert(p[0], p[1]+d[1]+1, p[2], c, f)        // TR
+// 		m.vert(p[0], p[1], p[2], c, f)               // BR
+// 	case South:
+// 		m.vert(p[0], p[1]+d[1]+1, p[2]+1, c, f)        // TL
+// 		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2]+1, c, f) // TR
+// 		m.vert(p[0], p[1], p[2]+1, c, f)               // BL
+// 		m.vert(p[0], p[1], p[2]+1, c, f)               // BL
+// 		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2]+1, c, f) // TR
+// 		m.vert(p[0]+d[0]+1, p[1], p[2]+1, c, f)        // BR
+// 	case East:
+// 		m.vert(p[0]+1, p[1]+d[1]+1, p[2]+d[2]+1, c, f) // TL
+// 		m.vert(p[0]+1, p[1]+d[1]+1, p[2], c, f)        // TR
+// 		m.vert(p[0]+1, p[1], p[2]+d[2]+1, c, f)        // BL
+// 		m.vert(p[0]+1, p[1], p[2]+d[2]+1, c, f)        // BL
+// 		m.vert(p[0]+1, p[1]+d[1]+1, p[2], c, f)        // TR
+// 		m.vert(p[0]+1, p[1], p[2], c, f)               // BR
+// 	case West:
+// 		m.vert(p[0], p[1]+d[1]+1, p[2], c, f)        // TL
+// 		m.vert(p[0], p[1]+d[1]+1, p[2]+d[2]+1, c, f) // TR
+// 		m.vert(p[0], p[1], p[2], c, f)               // BL
+// 		m.vert(p[0], p[1], p[2], c, f)               // BL
+// 		m.vert(p[0], p[1]+d[1]+1, p[2]+d[2]+1, c, f) // TR
+// 		m.vert(p[0], p[1], p[2]+d[2]+1, c, f)        // BR
+// 	case Top:
+// 		m.vert(p[0], p[1]+1, p[2], c, f)               // TL
+// 		m.vert(p[0]+d[0]+1, p[1]+1, p[2], c, f)        // TR
+// 		m.vert(p[0], p[1]+1, p[2]+d[2]+1, c, f)        // BL
+// 		m.vert(p[0], p[1]+1, p[2]+d[2]+1, c, f)        // BL
+// 		m.vert(p[0]+d[0]+1, p[1]+1, p[2], c, f)        // TR
+// 		m.vert(p[0]+d[0]+1, p[1]+1, p[2]+d[2]+1, c, f) // BR
+// 	case Bottom:
+// 		m.vert(p[0]+d[0]+1, p[1], p[2], c, f)        // TL
+// 		m.vert(p[0], p[1], p[2], c, f)               // TR
+// 		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, c, f) // BL
+// 		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, c, f) // BL
+// 		m.vert(p[0], p[1], p[2], c, f)               // TR
+// 		m.vert(p[0], p[1], p[2]+d[2]+1, c, f)        // BR
+// 	}
+// 	m.vboCurrent = false
+// }
 
 // Reset rests the mesh builder state.
 func (m *VoxelMesh) Reset() {

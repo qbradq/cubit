@@ -411,7 +411,9 @@ func (m *Mod) loadParts() error {
 		if vf, err := util.NewVoxFromReader(f); err != nil {
 			return m.wrap("processing vox file %s", err, path)
 		} else {
-			return registerPartMesh(modPath, c3d.BuildVoxelMesh(vf))
+			mesh := c3d.NewVoxelMesh()
+			c3d.BuildVoxelMesh[[4]uint8](vf, [4]uint8{0, 0, 0, 0}, mesh)
+			return registerPartMesh(modPath, mesh)
 		}
 	})
 }

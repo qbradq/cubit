@@ -1,7 +1,6 @@
 package client
 
 import (
-	"math"
 	"runtime"
 	"time"
 
@@ -101,15 +100,9 @@ func Main() {
 	model := cubit.NewModel("/cubit/models/structures/door0")
 	model.DrawDescriptor.Orientation.Translate(mgl32.Vec3{6, 1, 10})
 	app.AddModelDD(model.DrawDescriptor)
-	// app.AddModelDD(&c3d.ModelDrawDescriptor{
-	// 	ID: 1,
-	// 	Root: &c3d.Part{
-	// 		Mesh: cubit.GetPartMesh("/cubit/models/structures/door0"),
-	// 	},
-	// })
-	// cam := c3d.NewCamera(mgl32.Vec3{9, 13, 8})
-	// cam := c3d.NewCamera(mgl32.Vec3{7, 3, 7})
-	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
+	cam.Yaw = 90
+	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	// Main loop
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
@@ -121,7 +114,7 @@ func Main() {
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
 		console.update()
-		model.DrawDescriptor.Orientation.Yaw(math.Pi * 2 * dt)
+		// model.DrawDescriptor.Orientation.Yaw(math.Pi * 2 * dt)
 		// Handle input
 		if input.WasPressed("debug") {
 			app.DebugTextVisible = !app.DebugTextVisible

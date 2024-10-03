@@ -42,8 +42,10 @@ var voxDefs = []*Vox{}
 
 // NewVox creates a new Vox object ready to use.
 func NewVox(v *util.Vox) *Vox {
+	mesh := c3d.NewVoxelMesh()
+	c3d.BuildVoxelMesh[[4]uint8](v, [4]uint8{0, 0, 0, 0}, mesh)
 	return &Vox{
-		Mesh:   c3d.BuildVoxelMesh(v),
+		Mesh:   mesh,
 		width:  v.Width,
 		height: v.Height,
 		depth:  v.Depth,
