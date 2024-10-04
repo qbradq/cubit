@@ -1,4 +1,4 @@
-package cubit
+package mod
 
 import (
 	"encoding/json"
@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/t"
 	"github.com/qbradq/cubit/internal/util"
 )
 
@@ -33,17 +34,17 @@ func mustRead(f fs.File, err error) []byte {
 
 // Mod manages a bundle of cubit engine content in separate external files.
 type Mod struct {
-	ID          string                          `json:"-"`           // Unique ID of the mod
-	Name        string                          `json:"name"`        // Descriptive name of the mod
-	Description string                          `json:"description"` // Description of the mod
-	faceMap     map[c3d.FaceIndex]c3d.FaceIndex `json:"-"`           // Mapping of mod face indexes to final texture atlas indexes
+	ID          string                      `json:"-"`           // Unique ID of the mod
+	Name        string                      `json:"name"`        // Descriptive name of the mod
+	Description string                      `json:"description"` // Description of the mod
+	faceMap     map[t.FaceIndex]t.FaceIndex `json:"-"`           // Mapping of mod face indexes to final texture atlas indexes
 	f           fs.FS
 }
 
 // newMod creates a new Mod object.
 func newMod() *Mod {
 	return &Mod{
-		faceMap: map[c3d.FaceIndex]c3d.FaceIndex{},
+		faceMap: map[t.FaceIndex]t.FaceIndex{},
 	}
 }
 
@@ -67,8 +68,8 @@ func loadModInfo(name string) error {
 // ReloadModInfo reloads all top-level info for all mods present.
 func ReloadModInfo() error {
 	Mods = map[string]*Mod{}
-	cubeDefsById = map[string]*Cube{}
-	cubeDefs = []*Cube{}
+	cubeDefsById = map[string]*t.Cube{}
+	CubeDefs = []*t.Cube{}
 	voxIndex = map[string]*Vox{}
 	Faces = c3d.NewFaceAtlas()
 	UITiles = c3d.NewFaceAtlas()
@@ -199,17 +200,17 @@ func (m *Mod) loadFacePage(n uint8, r io.Reader) error {
 		return m.wrap("decoding face",
 			errors.New("face page images must be 256x256 pixels in size"))
 	}
-	face := image.NewRGBA(image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims))
+	face := image.NewRGBA(image.Rect(0, 0, t.FaceDims, t.FaceDims))
 	for fy := 0; fy < 8; fy++ {
 		for fx := 0; fx < 8; fx++ {
 			draw.Draw(
-				face, image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims),
-				img, image.Pt(fx*c3d.FaceDims, fy*c3d.FaceDims),
+				face, image.Rect(0, 0, t.FaceDims, t.FaceDims),
+				img, image.Pt(fx*t.FaceDims, fy*t.FaceDims),
 				draw.Src)
 			if isEmpty(face) {
 				continue
 			}
-			m.faceMap[c3d.FaceIndexFromXYZ(fx, fy, int(n))] = Faces.AddFace(face)
+			m.faceMap[t.FaceIndexFromXYZ(fx, fy, int(n))] = Faces.AddFace(face)
 		}
 	}
 	return nil
@@ -243,7 +244,7 @@ func (m *Mod) loadCubes() error {
 		if err != nil {
 			return m.wrap("reading cube file %s", err, path)
 		}
-		cubes := map[string]*Cube{}
+		cubes := map[string]*t.Cube{}
 		if err := json.Unmarshal(b, &cubes); err != nil {
 			return m.wrap("parsing cube file %s", err, path)
 		}
@@ -253,7 +254,7 @@ func (m *Mod) loadCubes() error {
 			for i := range cube.Faces {
 				fi, found := m.faceMap[cube.Faces[i]]
 				if !found {
-					cube.Faces[i] = c3d.FaceIndexInvalid
+					cube.Faces[i] = t.FaceIndexInvalid
 					continue
 				}
 				cube.Faces[i] = fi
@@ -365,12 +366,12 @@ func (m *Mod) loadUIPage(n uint8, r io.Reader) error {
 		return m.wrap("decoding ui tile",
 			errors.New("ui page images must be 256x256 pixels in size"))
 	}
-	face := image.NewRGBA(image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims))
+	face := image.NewRGBA(image.Rect(0, 0, t.FaceDims, t.FaceDims))
 	for fy := 0; fy < 16; fy++ {
 		for fx := 0; fx < 16; fx++ {
 			draw.Draw(
-				face, image.Rect(0, 0, c3d.FaceDims, c3d.FaceDims),
-				img, image.Pt(fx*c3d.FaceDims, fy*c3d.FaceDims),
+				face, image.Rect(0, 0, t.FaceDims, t.FaceDims),
+				img, image.Pt(fx*t.FaceDims, fy*t.FaceDims),
 				draw.Src)
 			if isEmpty(face) {
 				continue
@@ -412,7 +413,7 @@ func (m *Mod) loadParts() error {
 			return m.wrap("processing vox file %s", err, path)
 		} else {
 			mesh := c3d.NewVoxelMesh()
-			c3d.BuildVoxelMesh[[4]uint8](vf, [4]uint8{0, 0, 0, 0}, mesh)
+			c3d.BuildVoxelMesh[[4]uint8](vf, mesh)
 			return registerPartMesh(modPath, mesh)
 		}
 	})

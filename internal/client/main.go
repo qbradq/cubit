@@ -8,7 +8,8 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
-	"github.com/qbradq/cubit/internal/cubit"
+	"github.com/qbradq/cubit/internal/mod"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 // Configuration variables
@@ -23,7 +24,7 @@ var win *glfw.Window       // GLFW window
 var app *c3d.App           // Graphics application
 var console *consoleWidget // Console widget
 var input *Input           // Input instance
-var world *cubit.World     // The currently loaded world
+var world *t.World         // The currently loaded world
 
 // UI globals
 var npWindow c3d.NinePatch
@@ -49,10 +50,10 @@ func Main() {
 	win.MakeContextCurrent()
 	win.SetPos(0, 0)
 	// Load mods
-	if err := cubit.ReloadModInfo(); err != nil {
+	if err := mod.ReloadModInfo(); err != nil {
 		panic(err)
 	}
-	if err := cubit.LoadMods("cubit", "town"); err != nil {
+	if err := mod.LoadMods("cubit", "town"); err != nil {
 		panic(err)
 	}
 	// OpenGL initialization
@@ -63,29 +64,29 @@ func Main() {
 	defer app.Delete()
 	// Globals init
 	npWindow = c3d.NinePatch{
-		cubit.GetUITile("/cubit/000"),
-		cubit.GetUITile("/cubit/001"),
-		cubit.GetUITile("/cubit/002"),
-		cubit.GetUITile("/cubit/010"),
-		cubit.GetUITile("/cubit/011"),
-		cubit.GetUITile("/cubit/012"),
-		cubit.GetUITile("/cubit/020"),
-		cubit.GetUITile("/cubit/021"),
-		cubit.GetUITile("/cubit/022"),
+		mod.GetUITile("/cubit/000"),
+		mod.GetUITile("/cubit/001"),
+		mod.GetUITile("/cubit/002"),
+		mod.GetUITile("/cubit/010"),
+		mod.GetUITile("/cubit/011"),
+		mod.GetUITile("/cubit/012"),
+		mod.GetUITile("/cubit/020"),
+		mod.GetUITile("/cubit/021"),
+		mod.GetUITile("/cubit/022"),
 	}
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
 	console = newConsoleWidget(app)
 	console.printf([3]uint8{0, 255, 255},
 		"%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
 	console.add(app)
-	app.SetCrosshair(cubit.GetUITile("/cubit/003"), layerCrosshair)
+	app.SetCrosshair(mod.GetUITile("/cubit/003"), layerCrosshair)
 	app.CrosshairVisible = true
-	app.SetCursor(cubit.GetUITile("/cubit/004"), layerCursor)
+	app.SetCursor(mod.GetUITile("/cubit/004"), layerCursor)
 	app.ChunkBoundsVisible = true
 	// World setup
-	world = cubit.NewWorld()
-	world.TestGen()
-	chunk := NewChunk(cubit.Pos(0, 0, 0))
+	world = t.NewWorld()
+	TestGen(world)
+	chunk := NewChunk(t.IVec3{0, 0, 0})
 	chunk.Update()
 	app.AddChunkDD(chunk.cdd)
 	// app.AddChunkDD(&c3d.ChunkDrawDescriptor{
@@ -93,15 +94,15 @@ func Main() {
 	// 	VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{
 	// 		{
 	// 			ID:   1,
-	// 			Mesh: cubit.GetVoxByPath("/cubit/vox/debug").Mesh,
+	// 			Mesh: t.GetVoxByPath("/cubit/vox/debug").Mesh,
 	// 		},
 	// 	},
 	// })
-	model := cubit.NewModel("/cubit/models/structures/door0")
+	model := mod.NewModel("/cubit/models/structures/door0")
 	model.DrawDescriptor.Orientation.Translate(mgl32.Vec3{6, 1, 10})
 	app.AddModelDD(model.DrawDescriptor)
 	cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
-	cam.Yaw = 90
+	cam.Yaw = 90.001
 	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	// Main loop
 	lastFrame := glfw.GetTime()
@@ -151,7 +152,7 @@ func glInit() (*c3d.App, error) {
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	gl.FrontFace(gl.CW)
-	return c3d.NewApp(cubit.Faces, cubit.UITiles)
+	return c3d.NewApp(mod.Faces, mod.UITiles)
 }
 
 func cameraInput(cam *c3d.Camera) {
@@ -191,4 +192,33 @@ func cameraInput(cam *c3d.Camera) {
 	if cam.Pitch < -89 {
 		cam.Pitch = -89
 	}
+}
+
+// TODO DEBUG REMOVE
+func TestGen(w *t.World) {
+	rStone := mod.GetCubeDef("/cubit/cubes/stone")
+	rGrass := mod.GetCubeDef("/cubit/cubes/grass")
+	vWindow := mod.GetVoxByPath("/cubit/vox/window0")
+	rect := func(min, max t.IVec3, r t.Cell) {
+		for iy := min[1]; iy <= max[1]; iy++ {
+			for iz := min[2]; iz <= max[2]; iz++ {
+				for ix := min[0]; ix <= max[0]; ix++ {
+					w.SetCell(t.IVec3{ix, iy, iz}, r)
+				}
+			}
+		}
+	}
+	// Ground
+	rect(t.IVec3{0, 0, 0}, t.IVec3{15, 0, 15}, t.CellForCube(rGrass, t.North))
+	// Walls
+	rect(t.IVec3{4, 1, 4}, t.IVec3{4, 3, 10}, t.CellForCube(rStone, t.North))
+	rect(t.IVec3{10, 1, 4}, t.IVec3{10, 3, 10}, t.CellForCube(rStone, t.North))
+	rect(t.IVec3{4, 1, 4}, t.IVec3{10, 3, 4}, t.CellForCube(rStone, t.North))
+	rect(t.IVec3{4, 1, 10}, t.IVec3{10, 3, 10}, t.CellForCube(rStone, t.North))
+	// Ceiling
+	rect(t.IVec3{4, 4, 4}, t.IVec3{10, 4, 10}, t.CellForCube(rStone, t.North))
+	// Window and doorway
+	w.SetCell(t.IVec3{6, 1, 10}, t.CellInvalid)
+	w.SetCell(t.IVec3{6, 2, 10}, t.CellInvalid)
+	w.SetCell(t.IVec3{8, 2, 10}, t.CellForVox(vWindow.Ref, t.North))
 }

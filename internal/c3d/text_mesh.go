@@ -4,27 +4,8 @@ import (
 	"encoding/binary"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
+	"github.com/qbradq/cubit/internal/t"
 )
-
-// VirtualScreenGlyphsWide is the width of the screen in glyphs.
-const VirtualScreenGlyphsWide int = 80
-
-// vsGlyphWidth is the width of one glyph in virtual screen units, minus boarder
-// width.
-const vsGlyphWidth int = VirtualScreenWidth / VirtualScreenGlyphsWide
-
-// CellDimsVS is the dimensions of a cell in screen units.
-const CellDimsVS int = vsGlyphWidth
-
-// vsCellHeight is the height of one font atlas cell in virtual screen units.
-const vsCellHeight int = (vsGlyphWidth * faCellHeight) / faCellWidth
-
-// vsBaseline is the Y offset for baseline in virtual screen units.
-const vsBaseline int = vsCellHeight / 4
-
-// LineSpacingVS is the line spacing used in print commands in virtual screen
-// units.
-const LineSpacingVS int = (vsGlyphWidth / 2) * 3 // 1.5
 
 // TextMesh is a drawable layer of text. TextMesh may be printed into the layer
 // at any point, and may overlap.
@@ -94,30 +75,30 @@ func (text *TextMesh) Print(x, y int, c [3]uint8, s string) {
 		return
 	}
 	text.vboDirty = true
-	y = VirtualScreenHeight - y // Invert Y
+	y = t.VirtualScreenHeight - y // Invert Y
 	l := x
-	b := y - (vsCellHeight - vsBaseline)
+	b := y - (t.VSCellHeight - t.VSBaseline)
 	for _, sr := range s {
 		if sr == '\n' {
 			l = x
-			b += LineSpacingVS
+			b += t.LineSpacingVS
 			continue
 		}
-		t := b + vsCellHeight
-		r := l + vsGlyphWidth
+		p := b + t.VSCellHeight
+		r := l + t.VSGlyphWidth
 		g := text.f.getGlyph(sr)
 		ut := g.v
 		ub := ut + 1
 		ul := g.u
 		ur := ul + 1
 		//XY  U   V
-		text.vert(l, t, ul, ut, c) // TL
-		text.vert(r, t, ur, ut, c) // TR
+		text.vert(l, p, ul, ut, c) // TL
+		text.vert(r, p, ur, ut, c) // TR
 		text.vert(l, b, ul, ub, c) // BL
 		text.vert(l, b, ul, ub, c) // BL
-		text.vert(r, t, ur, ut, c) // TR
+		text.vert(r, p, ur, ut, c) // TR
 		text.vert(r, b, ur, ub, c) // BR
-		l += vsGlyphWidth
+		l += t.VSGlyphWidth
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 // vsTileDims is the dimensions of a tile in virtual screen units.
@@ -69,8 +70,8 @@ func (e *UIMesh) vert(x, y, u, v int) {
 }
 
 // Tile draws the given UI tile at the position given in virtual screen units.
-func (e *UIMesh) Tile(x, y int, i FaceIndex) {
-	t := VirtualScreenHeight - y // Invert Y
+func (e *UIMesh) Tile(x, y int, i t.FaceIndex) {
+	t := t.VirtualScreenHeight - y // Invert Y
 	b := t - vsTileDims
 	l := x
 	r := l + vsTileDims
@@ -87,8 +88,8 @@ func (e *UIMesh) Tile(x, y int, i FaceIndex) {
 
 // Scaled draws the given UI tile at the position given in virtual screen units
 // with the given width and height in virtual screen units.
-func (e *UIMesh) Scaled(x, y, w, h int, i FaceIndex) {
-	t := VirtualScreenHeight - y // Invert Y
+func (e *UIMesh) Scaled(x, y, w, h int, i t.FaceIndex) {
+	t := t.VirtualScreenHeight - y // Invert Y
 	b := t - h
 	l := x
 	r := l + w

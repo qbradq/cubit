@@ -5,6 +5,7 @@ import (
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 // App manages a set of drawable objects and the shader programs used to draw
@@ -105,17 +106,17 @@ func (a *App) AddDebugLine(c [3]uint8, f string, args ...any) {
 // updateDebugText updates the debug text mesh.
 func (a *App) updateDebugText() {
 	a.debugText.Reset()
-	y := VirtualScreenHeight - len(a.debugLines)*LineSpacingVS
+	y := t.VirtualScreenHeight - len(a.debugLines)*t.LineSpacingVS
 	for _, line := range a.debugLines {
 		a.debugText.Print(0, y, line.Color, line.String)
-		y += LineSpacingVS
+		y += t.LineSpacingVS
 	}
 }
 
 // SetCursor sets the UI tile to use as the mouse cursor.
-func (a *App) SetCursor(f FaceIndex, l uint16) {
+func (a *App) SetCursor(f t.FaceIndex, l uint16) {
 	a.cursor = a.NewUIMesh()
-	a.cursor.Scaled(0, 0, vsGlyphWidth*2, vsGlyphWidth*2, f)
+	a.cursor.Scaled(0, 0, t.VSGlyphWidth*2, t.VSGlyphWidth*2, f)
 	a.cursor.Layer = l
 }
 
@@ -128,11 +129,13 @@ func (a *App) SetCursorPosition(p mgl32.Vec2) {
 }
 
 // SetCrosshair sets the UI tile to use as the 3D crosshair.
-func (a *App) SetCrosshair(f FaceIndex, l uint16) {
+func (a *App) SetCrosshair(f t.FaceIndex, l uint16) {
 	a.crosshair = a.NewUIMesh()
-	a.crosshair.Scaled(0, 0, vsGlyphWidth*2, vsGlyphWidth*2, f)
-	a.crosshair.Position[0] = float32(VirtualScreenWidth-vsGlyphWidth*2) / 2
-	a.crosshair.Position[1] = float32(VirtualScreenHeight-vsGlyphWidth*2) / 2
+	a.crosshair.Scaled(0, 0, t.VSGlyphWidth*2, t.VSGlyphWidth*2, f)
+	a.crosshair.Position[0] =
+		float32(t.VirtualScreenWidth-t.VSGlyphWidth*2) / 2
+	a.crosshair.Position[1] =
+		float32(t.VirtualScreenHeight-t.VSGlyphWidth*2) / 2
 	a.crosshair.Layer = l
 }
 
@@ -193,7 +196,9 @@ func (a *App) RemoveModelDD(id uint32) {
 func (a *App) Draw(c *Camera) {
 	// Variable setup
 	pMat := mgl32.Perspective(mgl32.DegToRad(60),
-		float32(VirtualScreenWidth)/float32(VirtualScreenHeight), 0.1, 1000.0)
+		float32(t.VirtualScreenWidth)/
+			float32(t.VirtualScreenHeight),
+		0.1, 1000.0)
 	vMat := c.TransformMatrix()
 	// Frame setup
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -244,7 +249,7 @@ func (a *App) Draw(c *Camera) {
 				continue
 			}
 			o := *FacingToOrientation[v.Facing]
-			o.pos = v.Position.Add(mgl32.Vec3{8, 8, 8}.Mul(VoxelScale))
+			o.pos = v.Position.Add(mgl32.Vec3{8, 8, 8}.Mul(t.VoxelScale))
 			mm := o.TransformMatrix()
 			gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelMatrix"), 1, false,
 				&mm[0])
@@ -267,8 +272,8 @@ func (a *App) Draw(c *Camera) {
 	// Draw UI elements, tiles layer
 	gl.Clear(gl.DEPTH_BUFFER_BIT)
 	a.pUI.use()
-	pMat = mgl32.Ortho2D(0, float32(VirtualScreenWidth), 0,
-		float32(VirtualScreenHeight))
+	pMat = mgl32.Ortho2D(0, float32(t.VirtualScreenWidth), 0,
+		float32(t.VirtualScreenHeight))
 	gl.UniformMatrix4fv(a.pUI.uni("uProjectionMatrix"), 1, false, &pMat[0])
 	a.tiles.bind(a.pUI)
 	for _, m := range a.uiMeshes {

@@ -1,4 +1,4 @@
-package cubit
+package mod
 
 import (
 	"fmt"

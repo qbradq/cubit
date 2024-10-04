@@ -8,17 +8,10 @@ import (
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/golang/freetype/truetype"
 	"github.com/qbradq/cubit/data"
+	"github.com/qbradq/cubit/internal/t"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
-
-const faDims int = 2048
-const faGlyphSize int = 32
-const faCellWidth int = 32
-const faCellHeight int = 64
-const faCellXOfs int = (faCellWidth - faGlyphSize) / 2
-const faCellYOfs int = (faCellHeight - faGlyphSize) / 2
-const faCellsWide int = faDims / faCellWidth
 
 // glyph describes the attributes of a single glyph in the atlas.
 type glyph struct {
@@ -43,7 +36,7 @@ func newFontManager(prg *program) *fontManager {
 	ret := &fontManager{
 		glyphMap: map[rune]uint16{},
 	}
-	ret.img = image.NewRGBA(image.Rect(0, 0, faDims, faDims))
+	ret.img = image.NewRGBA(image.Rect(0, 0, t.FADims, t.FADims))
 	draw.Draw(ret.img, ret.img.Bounds(), image.Transparent, image.Pt(0, 0),
 		draw.Src)
 	// Load font
@@ -79,7 +72,7 @@ func newFontManager(prg *program) *fontManager {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
-		int32(faDims), int32(faDims), 0,
+		int32(t.FADims), int32(t.FADims), 0,
 		gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(ret.img.Pix),
 	)
 	return ret
@@ -87,47 +80,47 @@ func newFontManager(prg *program) *fontManager {
 
 // updateAtlasTexture uploads the backing image to the GPU to replace the
 // current glyph atlas.
-func (t *fontManager) updateAtlasTexture() {
+func (m *fontManager) updateAtlasTexture() {
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, t.t)
+	gl.BindTexture(gl.TEXTURE_2D, m.t)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA,
-		int32(faDims), int32(faDims), 0,
-		gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(t.img.Pix),
+		int32(t.FADims), int32(t.FADims), 0,
+		gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(m.img.Pix),
 	)
-	t.imgDirty = false
+	m.imgDirty = false
 }
 
 // cacheGlyph adds the rune to the texture atlas and returns the index.
-func (t *fontManager) cacheGlyph(r rune) glyph {
+func (m *fontManager) cacheGlyph(r rune) glyph {
 	// Load the glyph information and add it to the map
-	if _, duplicate := t.glyphMap[r]; duplicate {
+	if _, duplicate := m.glyphMap[r]; duplicate {
 		log.Printf("warning: duplicate rune to c3d.text.cacheGlyph %s",
 			string(r))
 		return glyph{}
 	}
-	i := int(t.nextIdx)
-	t.nextIdx++
+	i := int(m.nextIdx)
+	m.nextIdx++
 	gb := &truetype.GlyphBuf{}
-	gb.Load(t.f, t.scale, truetype.Index(r), font.HintingNone)
+	gb.Load(m.f, m.scale, truetype.Index(r), font.HintingNone)
 	g := glyph{
 		w: gb.AdvanceWidth.Ceil(),
-		u: i % faCellsWide,
-		v: i / faCellsWide,
+		u: i % t.FACellsWide,
+		v: i / t.FACellsWide,
 	}
-	t.glyphMap[r] = uint16(i)
-	t.glyphs = append(t.glyphs, g)
+	m.glyphMap[r] = uint16(i)
+	m.glyphs = append(m.glyphs, g)
 	// Update the backing image
-	t.d.Dot = fixed.P(
-		g.u*faCellWidth+faCellXOfs,
-		g.v*faCellHeight+(faCellHeight-faCellYOfs),
+	m.d.Dot = fixed.P(
+		g.u*t.FACellWidth+t.FACellXOfs,
+		g.v*t.FACellHeight+(t.FACellHeight-t.FACellYOfs),
 	)
-	t.d.DrawString(string(r))
-	t.outlineGlyph(
-		g.u*faCellWidth,
-		g.v*faCellHeight,
-		faCellWidth, faCellHeight,
+	m.d.DrawString(string(r))
+	m.outlineGlyph(
+		g.u*t.FACellWidth,
+		g.v*t.FACellHeight,
+		t.FACellWidth, t.FACellHeight,
 	)
-	t.imgDirty = true
+	m.imgDirty = true
 	return g
 }
 

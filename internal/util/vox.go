@@ -35,6 +35,11 @@ func (v *Vox) Dimensions() (w, h, d int) {
 	return v.Width, v.Depth, v.Height
 }
 
+// IsEmpty implements the c3d.VoxelSource interface.
+func (v *Vox) IsEmpty(c [4]uint8) bool {
+	return c[3] < 255
+}
+
 // NewVoxFromReader returns a new Vox structure with the contents loaded from
 // a MagicaVoxel .vox file.
 func NewVoxFromReader(r io.Reader) (*Vox, error) {

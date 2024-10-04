@@ -7,6 +7,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 const conLines int = 1024
@@ -36,12 +37,12 @@ func newConsoleWidget(app *c3d.App) *consoleWidget {
 	ret.cp = len(ret.prompt)
 	// Setup UI
 	ret.NinePatch(0, 0,
-		c3d.VirtualScreenWidth, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
+		t.VirtualScreenWidth, t.VirtualScreenHeight-t.CellDimsVS*3,
 		npWindow)
-	ret.NinePatch(0, c3d.VirtualScreenHeight-c3d.CellDimsVS*3,
-		c3d.VirtualScreenWidth, c3d.CellDimsVS*3,
+	ret.NinePatch(0, t.VirtualScreenHeight-t.CellDimsVS*3,
+		t.VirtualScreenWidth, t.CellDimsVS*3,
 		npWindow)
-	ret.Position = mgl32.Vec2{0, -float32(c3d.VirtualScreenHeight)}
+	ret.Position = mgl32.Vec2{0, -float32(t.VirtualScreenHeight)}
 	return ret
 }
 
@@ -75,9 +76,9 @@ func (w *consoleWidget) stepVisibility() {
 	}
 	switch w.vis {
 	case 0:
-		w.Position[1] = -float32(c3d.VirtualScreenHeight)
+		w.Position[1] = -float32(t.VirtualScreenHeight)
 	case 1:
-		w.Position[1] = -float32(c3d.VirtualScreenHeight / 2)
+		w.Position[1] = -float32(t.VirtualScreenHeight / 2)
 	case 2:
 		w.Position[1] = 0
 	}
@@ -94,9 +95,9 @@ func (w *consoleWidget) drawText() {
 	if li < 0 {
 		li = conLines - 1
 	}
-	p := [2]int{c3d.CellDimsVS, c3d.CellDimsVS * conHeight}
+	p := [2]int{t.CellDimsVS, t.CellDimsVS * conHeight}
 	for {
-		if p[1] < c3d.CellDimsVS {
+		if p[1] < t.CellDimsVS {
 			break
 		}
 		line := w.lines[li]
@@ -105,7 +106,7 @@ func (w *consoleWidget) drawText() {
 		if li < 0 {
 			li = conLines - 1
 		}
-		p[1] -= c3d.LineSpacingVS
+		p[1] -= t.LineSpacingVS
 	}
 	// Adjust prompt offset
 	l := w.po
@@ -121,10 +122,10 @@ func (w *consoleWidget) drawText() {
 	if len(prompt) >= conWidth {
 		prompt = prompt[:conWidth]
 	}
-	p[1] = c3d.CellDimsVS * (conHeight + 3)
+	p[1] = t.CellDimsVS * (conHeight + 3)
 	w.Text.Print(p[0], p[1], [3]uint8{255, 255, 255}, prompt)
 	// Draw caret
-	p[0] = c3d.CellDimsVS * ((c - l) + 1)
+	p[0] = t.CellDimsVS * ((c - l) + 1)
 	w.Text.Print(p[0], p[1], [3]uint8{255, 255, 255}, "_")
 }
 

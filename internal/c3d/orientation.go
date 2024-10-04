@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 // Orientation provides data and utilities for manipulating position and Euler
@@ -102,9 +103,9 @@ func (o *Orientation) TranslationMatrix() mgl32.Mat4 {
 // voxel units rather than block units.
 func (o *Orientation) VoxelTranslationMatrix() mgl32.Mat4 {
 	return mgl32.Translate3D(
-		o.pos[0]/VoxelScale,
-		o.pos[1]/VoxelScale,
-		o.pos[2]/VoxelScale,
+		o.pos[0]/t.VoxelScale,
+		o.pos[1]/t.VoxelScale,
+		o.pos[2]/t.VoxelScale,
 	)
 }
 

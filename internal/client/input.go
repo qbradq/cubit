@@ -3,7 +3,7 @@ package client
 import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 const (
@@ -123,7 +123,7 @@ func (n *Input) posCallback(w *glfw.Window, x, y float64) {
 	}
 	app.SetCursorPosition(
 		n.CursorPosition.Mul(
-			float32(c3d.VirtualScreenWidth) / float32(screenWidth)))
+			float32(t.VirtualScreenWidth) / float32(screenWidth)))
 }
 
 func (n *Input) PollEvents() {

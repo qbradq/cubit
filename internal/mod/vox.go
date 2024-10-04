@@ -1,19 +1,14 @@
-package cubit
+package mod
 
 import (
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/t"
 	"github.com/qbradq/cubit/internal/util"
 )
 
-// VoxRef encodes a reference to a vox model.
-type VoxRef uint16
-
-// VoxRefInvalid is the invalid valid value for VoxRef variables.
-const VoxRefInvalid VoxRef = 0xFFFF
-
 // Vox manages an RGBA voxel image.
 type Vox struct {
-	Ref                  VoxRef         // Voxel reference
+	Ref                  t.VoxRef       // Voxel reference
 	Mesh                 *c3d.VoxelMesh // Voxel mesh
 	width, height, depth int            // Dimensions
 	voxels               [][4]uint8     // RGBA voxels
@@ -29,21 +24,21 @@ func registerVox(p string, v *Vox) {
 	if _, duplicate := voxIndex[p]; duplicate {
 		panic("duplicate vox path " + p)
 	}
-	v.Ref = VoxRef(len(voxDefs))
+	v.Ref = t.VoxRef(len(VoxDefs))
 	voxIndex[p] = v
-	voxDefs = append(voxDefs, v)
+	VoxDefs = append(VoxDefs, v)
 }
 
 // voxIndex is the global registry of vox models.
 var voxIndex = map[string]*Vox{}
 
-// voxDefs is the list of voxel definitions by internal ID.
-var voxDefs = []*Vox{}
+// VoxDefs is the list of voxel definitions by internal ID.
+var VoxDefs = []*Vox{}
 
 // NewVox creates a new Vox object ready to use.
 func NewVox(v *util.Vox) *Vox {
 	mesh := c3d.NewVoxelMesh()
-	c3d.BuildVoxelMesh[[4]uint8](v, [4]uint8{0, 0, 0, 0}, mesh)
+	c3d.BuildVoxelMesh[[4]uint8](v, mesh)
 	return &Vox{
 		Mesh:   mesh,
 		width:  v.Width,
