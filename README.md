@@ -1,2 +1,2 @@
-# cubit
-Cube-shaped world written in Golang
+# Cubit
+A cube-shaped world written in Golang.

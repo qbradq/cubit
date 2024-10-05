@@ -45,6 +45,7 @@ type ChunkDrawDescriptor struct {
 // ModelDrawDescriptor describes how and where to render a dynamic model.
 type ModelDrawDescriptor struct {
 	ID          uint32      // ID
+	Origin      mgl32.Vec3  // Origin of the model in model space
 	Orientation Orientation // Origin of the model
 	Root        *Part       // Root part that everything else is attached to
 }

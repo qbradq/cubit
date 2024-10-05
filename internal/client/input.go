@@ -18,22 +18,24 @@ type keySpec struct {
 }
 
 var KeyConfig = map[string][]keySpec{
-	"cancel":    {{glfw.KeyEscape, 0}},
-	"confirm":   {{glfw.KeyEnter, 0}},
-	"forward":   {{glfw.KeyW, 0}},
-	"backward":  {{glfw.KeyS, 0}},
-	"left":      {{glfw.KeyA, 0}},
-	"right":     {{glfw.KeyD, 0}},
-	"up":        {{glfw.KeyV, 0}},
-	"down":      {{glfw.KeyC, 0}},
-	"console":   {{glfw.KeyGraveAccent, glfw.ModControl}},
-	"backspace": {{glfw.KeyBackspace, 0}},
-	"delete":    {{glfw.KeyDelete, 0}},
-	"ui-left":   {{glfw.KeyLeft, 0}},
-	"ui-right":  {{glfw.KeyRight, 0}},
-	"ui-up":     {{glfw.KeyUp, 0}},
-	"ui-down":   {{glfw.KeyDown, 0}},
-	"debug":     {{glfw.KeyF12, 0}},
+	"cancel":     {{glfw.KeyEscape, 0}},
+	"confirm":    {{glfw.KeyEnter, 0}},
+	"forward":    {{glfw.KeyW, 0}},
+	"backward":   {{glfw.KeyS, 0}},
+	"left":       {{glfw.KeyA, 0}},
+	"right":      {{glfw.KeyD, 0}},
+	"up":         {{glfw.KeyV, 0}},
+	"down":       {{glfw.KeyC, 0}},
+	"turn-left":  {{glfw.KeyQ, 0}},
+	"turn-right": {{glfw.KeyE, 0}},
+	"console":    {{glfw.KeyGraveAccent, glfw.ModControl}},
+	"backspace":  {{glfw.KeyBackspace, 0}},
+	"delete":     {{glfw.KeyDelete, 0}},
+	"ui-left":    {{glfw.KeyLeft, 0}},
+	"ui-right":   {{glfw.KeyRight, 0}},
+	"ui-up":      {{glfw.KeyUp, 0}},
+	"ui-down":    {{glfw.KeyDown, 0}},
+	"debug":      {{glfw.KeyF12, 0}},
 }
 
 // Input manages the input and input configuration.
@@ -58,10 +60,10 @@ func NewInput(win *glfw.Window, screenSize mgl32.Vec2) *Input {
 	ret.CursorPosition = ret.lastCursorPos
 	win.SetKeyCallback(ret.keyCallback)
 	win.SetCharCallback(ret.charCallback)
-	win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	// win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	win.SetFocusCallback(func(w *glfw.Window, focused bool) {
 		if focused {
-			win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+			// win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 		} else {
 			win.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 		}

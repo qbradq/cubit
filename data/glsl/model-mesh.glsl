@@ -20,8 +20,8 @@ void main() {
 	color = aVertexColor;
 	lightLevel = uLightLevels[int(aVertexFacing)];
 	vec3 vp = aVertexPosition-uRotationPoint;
-	vp = vec3(vec4(vp, 1.0) * uModelMatrix);
-	vp = vp*scale;
+	vp = vp * scale;
+	vp = vec3(uModelMatrix * vec4(vp, 1.0));
 	gl_Position = uProjectionMatrix * uViewMatrix * vec4(vp, 1.0);
 }
 

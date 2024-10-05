@@ -266,7 +266,9 @@ func (a *App) Draw(c *Camera) {
 		&vMat[0])
 	for _, d := range a.modelDDs {
 		if d.Root != nil {
-			d.Root.draw(a.pModelMesh, &d.Orientation)
+			ro := d.Orientation
+			ro.Translate(d.Origin.Mul(t.VoxelScale))
+			d.Root.draw(a.pModelMesh, &ro)
 		}
 	}
 	// Draw UI elements, tiles layer

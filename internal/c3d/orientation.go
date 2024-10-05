@@ -2,6 +2,7 @@ package c3d
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -18,18 +19,22 @@ type Orientation struct {
 	quat  mgl32.Quat // Rotation quaternion
 }
 
-// Unmarshal implements the Unmarshaler interface.
-func (o *Orientation) Unmarshal(b []byte) error {
+// UnmarshalJSON implements the Unmarshaler interface.
+func (o *Orientation) UnmarshalJSON(b []byte) error {
 	values := []float32{}
 	if err := json.Unmarshal(b, &values); err != nil {
 		return err
 	}
+	if len(values) != 6 {
+		return errors.New(
+			"orientations are represented as an array of six numbers")
+	}
 	o.pos[0] = values[0]
 	o.pos[1] = values[1]
 	o.pos[2] = values[2]
-	o.pitch = values[3]
-	o.yaw = values[4]
-	o.roll = values[5]
+	o.pitch = mgl32.DegToRad(values[3])
+	o.yaw = mgl32.DegToRad(values[4])
+	o.roll = mgl32.DegToRad(values[5])
 	return nil
 }
 
@@ -120,12 +125,23 @@ func (o *Orientation) VoxelTransformMatrix() mgl32.Mat4 {
 	return o.VoxelTranslationMatrix().Mul4(o.RotationMatrix())
 }
 
-func (o *Orientation) Add(r *Orientation) Orientation {
-	ret := Orientation{
-		pos: o.pos.Add(r.pos),
-	}
-	ret.Pitch(o.pitch + r.pitch)
-	ret.Yaw(o.yaw + r.yaw)
-	ret.Roll(o.roll + r.roll)
-	return ret
+// Accumulate accumulates the rotation and translation of r into o.
+func (o *Orientation) Accumulate(r *Orientation) {
+	// m := o.TransformMatrix()
+	// v := m.Mul4x1(mgl32.Vec4{r.pos[0], r.pos[1], r.pos[2], 1})
+	// o.pos = mgl32.Vec3{o.pos[0]+v[0], o.pos[1]+v[1], o.pos[2]+v[2]}
+	m := r.RotationMatrix()
+	v := m.Mul4x1(mgl32.Vec4{o.pos[0], o.pos[1], o.pos[2], 1})
+	o.pos = mgl32.Vec3{r.pos[0] + v[0], r.pos[1] + v[1], r.pos[2] + v[2]}
+	// o.pitch = float32(math.Mod(float64(o.pitch+r.pitch), math.Pi*2))
+	// o.yaw = float32(math.Mod(float64(o.yaw+r.yaw), math.Pi*2))
+	// o.roll = float32(math.Mod(float64(o.roll+r.roll), math.Pi*2))
+}
+
+// Mul returns the passed vector multiplied by the transform matrix described
+// by o.
+func (o *Orientation) Mul(r mgl32.Vec3) mgl32.Vec3 {
+	m := o.TransformMatrix()
+	v := m.Mul4x1(mgl32.Vec4{r[0], r[1], r[2], 1})
+	return mgl32.Vec3{v[0], v[1], v[2]}
 }

@@ -319,7 +319,7 @@ func addFace[T any](p, d [3]uint8, f t.Facing, c T, m verter[T]) {
 		u := d[0] + 1
 		v := d[2] + 1
 		m.vert(p[0]+d[0]+1, p[1], p[2], 0, 0, 0, c, f)        // TL
-		m.vert(p[0], p[1], p[2], 1, u, 0, c, f)               // TR
+		m.vert(p[0], p[1], p[2], u, 0, 1, c, f)               // TR
 		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f) // BL
 		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f) // BL
 		m.vert(p[0], p[1], p[2], u, 0, 1, c, f)               // TR

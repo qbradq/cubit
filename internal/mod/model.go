@@ -10,14 +10,15 @@ import (
 // ModelPartDescriptor describes how to initialize a part attached to a model.
 type ModelPartDescriptor struct {
 	Mesh        string                `json:"mesh"`        // Absolute path to the part mesh
-	CenterPoint mgl32.Vec3            `json:"centerPoint"` // Center point / rotation point of the part
+	Origin      mgl32.Vec3            `json:"origin"`      // Center point / rotation point of the part
 	Orientation c3d.Orientation       `json:"orientation"` // T-pose orientation
 	Children    []ModelPartDescriptor `json:"children"`    // Child parts
 }
 
 // ModelDescriptor describes how to initialize a model.
 type ModelDescriptor struct {
-	Root ModelPartDescriptor `json:"root"` // Root part
+	Origin mgl32.Vec3          `json:"origin"`
+	Root   ModelPartDescriptor `json:"root"` // Root part
 }
 
 // Model describes a hierarchy of parts with defined animations.
@@ -42,7 +43,8 @@ func registerModel(p string, m *ModelDescriptor) error {
 func newPart(d *ModelPartDescriptor) *c3d.Part {
 	ret := &c3d.Part{
 		Mesh:        GetPartMesh(d.Mesh),
-		CenterPoint: d.CenterPoint,
+		Origin:      d.Origin,
+		Orientation: d.Orientation,
 	}
 	for _, cd := range d.Children {
 		ret.Children = append(ret.Children, newPart(&cd))
@@ -59,8 +61,9 @@ func NewModel(p string) *Model {
 	}
 	ret := &Model{
 		DrawDescriptor: &c3d.ModelDrawDescriptor{
-			ID:   1,
-			Root: newPart(&d.Root),
+			ID:     1,
+			Origin: d.Origin,
+			Root:   newPart(&d.Root),
 		},
 	}
 	return ret

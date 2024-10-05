@@ -1,6 +1,7 @@
 package client
 
 import (
+	"math"
 	"runtime"
 	"time"
 
@@ -88,7 +89,7 @@ func Main() {
 	TestGen(world)
 	chunk := NewChunk(t.IVec3{0, 0, 0})
 	chunk.Update()
-	app.AddChunkDD(chunk.cdd)
+	// app.AddChunkDD(chunk.cdd)
 	// app.AddChunkDD(&c3d.ChunkDrawDescriptor{
 	// 	ID: 1,
 	// 	VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{
@@ -98,12 +99,14 @@ func Main() {
 	// 		},
 	// 	},
 	// })
-	model := mod.NewModel("/cubit/models/structures/door0")
-	model.DrawDescriptor.Orientation.Translate(mgl32.Vec3{6, 1, 10})
+	// model := mod.NewModel("/cubit/models/characters/brad")
+	model := mod.NewModel("/cubit/models/characters/test")
+	// model.DrawDescriptor.Orientation.Translate(mgl32.Vec3{0, 1, 0})
+	// model.DrawDescriptor.Orientation.Yaw(math.Pi * 1.5)
 	app.AddModelDD(model.DrawDescriptor)
-	cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
-	cam.Yaw = 90.001
-	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	// cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
+	// cam.Yaw = 90.001
 	// Main loop
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
@@ -115,7 +118,7 @@ func Main() {
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
 		console.update()
-		// model.DrawDescriptor.Orientation.Yaw(math.Pi * 2 * dt)
+		model.DrawDescriptor.Orientation.Yaw(math.Pi * dt)
 		// Handle input
 		if input.WasPressed("debug") {
 			app.DebugTextVisible = !app.DebugTextVisible
@@ -180,6 +183,12 @@ func cameraInput(cam *c3d.Camera) {
 	}
 	if input.IsPressed("down") {
 		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
+	}
+	if input.IsPressed("turn-left") {
+		cam.Yaw -= dt * 360.0 / 2.0
+	}
+	if input.IsPressed("turn-right") {
+		cam.Yaw += dt * 360.0 / 2.0
 	}
 	if input.WasPressed("console") {
 		console.stepVisibility()
