@@ -18,8 +18,8 @@ type ModelPartDescriptor struct {
 
 // ModelDescriptor describes how to initialize a model.
 type ModelDescriptor struct {
-	Origin mgl32.Vec3          `json:"origin"`
-	Root   ModelPartDescriptor `json:"root"` // Root part
+	Origin mgl32.Vec3           `json:"origin"`
+	Root   *ModelPartDescriptor `json:"root"` // Root part
 }
 
 // Model describes a hierarchy of parts with defined animations.
@@ -68,7 +68,7 @@ func NewModel(p string) *Model {
 			ID:          1,
 			Origin:      d.Origin.Mul(t.VoxelScale),
 			Orientation: t.O(),
-			Root:        newPart(&d.Root),
+			Root:        newPart(d.Root),
 		},
 	}
 	return ret

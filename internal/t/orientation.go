@@ -97,14 +97,7 @@ func (o Orientation) TransformMatrix() mgl32.Mat4 {
 // Accumulate accumulates the orientation and position in model space and
 // returns the new orientation.
 func (o Orientation) Accumulate(r Orientation) Orientation {
-	// if r.Q.W == 0 {
-	// 	r.Q.W = 0.00001
-	// }
-	// if o.Q.W == 0 {
-	// 	o.Q.W = 0.00001
-	// }
 	o.Q = r.Q.Mul(o.Q).Normalize()
-	o.P = o.Q.Rotate(o.P)
-	o.P = o.P.Add(r.P)
+	o.P = r.Q.Rotate(o.P).Add(r.P)
 	return o
 }

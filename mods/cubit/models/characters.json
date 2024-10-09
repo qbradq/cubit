@@ -28,18 +28,18 @@
         "root": {
             "mesh": "/cubit/parts/characters/brad/leg",
             "origin": [2, 12, 5],
-            "orientation": [0, 0, 0, 0, 0, 0],
+            "orientation": [0, 0, 0, 45, 0, 0],
             "children": [
                 {
 
                     "mesh": "/cubit/parts/characters/brad/leg",
                     "origin": [2, 12, 5],
-                    "orientation": [0, -12, 0, 0, 0, 0],
+                    "orientation": [0, -12, 0, 0, 45, 0],
                     "children": [
                         {
                             "mesh": "/cubit/parts/characters/brad/leg",
                             "origin": [2, 12, 5],
-                            "orientation": [0, -12, 0, 0, 0, 0]
+                            "orientation": [0, -12, 0, 0, 0, 45]
                         }
                     ]
                 }

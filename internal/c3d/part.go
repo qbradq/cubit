@@ -16,9 +16,7 @@ type Part struct {
 
 // draw draws the part relative to the given orientation.
 func (p *Part) draw(prg *program, o t.Orientation) {
-	po := p.Orientation
-	po.Q = o.Q.Mul(po.Q)
-	po.P = o.Q.Rotate(po.P).Add(o.P)
+	po := p.Orientation.Accumulate(o)
 	if p.Mesh != nil {
 		mm := po.TransformMatrix()
 		gl.UniformMatrix4fv(prg.uni("uModelMatrix"), 1, false, &mm[0])

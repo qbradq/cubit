@@ -102,6 +102,7 @@ func Main() {
 	// })
 	// model := mod.NewModel("/cubit/models/characters/brad")
 	model := mod.NewModel("/cubit/models/characters/test")
+	// ddr := model.DrawDescriptor
 	app.AddModelDD(model.DrawDescriptor)
 	// cam := c3d.NewCamera(mgl32.Vec3{2, 2, 5})
 	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
