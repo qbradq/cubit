@@ -1,7 +1,6 @@
 package client
 
 import (
-	"math"
 	"runtime"
 	"time"
 
@@ -26,6 +25,7 @@ var app *c3d.App           // Graphics application
 var console *consoleWidget // Console widget
 var input *Input           // Input instance
 var world *t.World         // The currently loaded world
+var debugVector mgl32.Vec3 // Debug vector
 
 // UI globals
 var npWindow c3d.NinePatch
@@ -83,6 +83,7 @@ func Main() {
 	app.SetCrosshair(mod.GetUITile("/cubit/003"), layerCrosshair)
 	app.CrosshairVisible = true
 	app.SetCursor(mod.GetUITile("/cubit/004"), layerCursor)
+	app.CursorVisible = true
 	app.ChunkBoundsVisible = true
 	// World setup
 	world = t.NewWorld()
@@ -95,18 +96,27 @@ func Main() {
 	// 	VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{
 	// 		{
 	// 			ID:   1,
-	// 			Mesh: t.GetVoxByPath("/cubit/vox/debug").Mesh,
+	// 			Mesh: mod.GetVoxByPath("/cubit/vox/debug").Mesh,
 	// 		},
 	// 	},
 	// })
 	// model := mod.NewModel("/cubit/models/characters/brad")
 	model := mod.NewModel("/cubit/models/characters/test")
-	// model.DrawDescriptor.Orientation.Translate(mgl32.Vec3{0, 1, 0})
-	// model.DrawDescriptor.Orientation.Yaw(math.Pi * 1.5)
 	app.AddModelDD(model.DrawDescriptor)
+	// cam := c3d.NewCamera(mgl32.Vec3{2, 2, 5})
 	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	// cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
 	// cam.Yaw = 90.001
+	// axis := c3d.NewLineMesh()
+	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
+	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 1, 0}, [4]uint8{0, 255, 0, 255})
+	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 0, 1}, [4]uint8{0, 0, 255, 255})
+	// ldd := &c3d.LineMeshDrawDescriptor{
+	// 	ID:          1,
+	// 	Orientation: t.O().Translate(mgl32.Vec3{1, 1, 1}),
+	// 	Mesh:        axis,
+	// }
+	// app.AddLineDD(ldd)
 	// Main loop
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
@@ -118,11 +128,22 @@ func Main() {
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
 		console.update()
-		model.DrawDescriptor.Orientation.Yaw(math.Pi * dt)
+		// model.DrawDescriptor.Root.Orientation =
+		// 	model.DrawDescriptor.Root.Orientation.Pitch(
+		// 		mgl32.DegToRad(debugVector[0] * 15))
+		// model.DrawDescriptor.Root.Children[0].Orientation =
+		// 	model.DrawDescriptor.Root.Children[0].Orientation.Pitch(
+		// 		mgl32.DegToRad(debugVector[1] * 15))
+		// model.DrawDescriptor.Root.Children[0].Children[0].Orientation =
+		// 	model.DrawDescriptor.Root.Children[0].Children[0].Orientation.Pitch(
+		// 		mgl32.DegToRad(debugVector[2] * 15))
+		// debugVector = mgl32.Vec3{}
+		// ddr := model.DrawDescriptor.Root
+		// ddr.Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[0]*15.0), 0, 0, mgl32.XYX)
+		// ddr.Children[0].Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[1]*15.0), 0, 0, mgl32.YXY)
+		// ddr.Children[0].Children[0].Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[2]*15.0), 0, 0, mgl32.ZYZ)
 		// Handle input
-		if input.WasPressed("debug") {
-			app.DebugTextVisible = !app.DebugTextVisible
-		}
+		debugInput()
 		if console.isFocused() {
 			console.input()
 		} else {
@@ -134,6 +155,7 @@ func Main() {
 			int(cam.Position[1]),
 			int(cam.Position[2]),
 		)
+		app.AddDebugLine([3]uint8{255, 0, 0}, "Debug Vector=%v", debugVector)
 		// Draw
 		app.Draw(cam)
 		// Finish the frame
@@ -156,51 +178,6 @@ func glInit() (*c3d.App, error) {
 	gl.CullFace(gl.BACK)
 	gl.FrontFace(gl.CW)
 	return c3d.NewApp(mod.Faces, mod.UITiles)
-}
-
-func cameraInput(cam *c3d.Camera) {
-	speed := walkSpeed * dt
-	if input.IsPressed("forward") {
-		dir := cam.Front
-		dir[1] = 0
-		dir = dir.Normalize().Mul(speed)
-		cam.Position = cam.Position.Add(dir)
-	}
-	if input.IsPressed("backward") {
-		dir := cam.Front
-		dir[1] = 0
-		dir = dir.Normalize().Mul(speed)
-		cam.Position = cam.Position.Sub(dir)
-	}
-	if input.IsPressed("left") {
-		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	}
-	if input.IsPressed("right") {
-		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	}
-	if input.IsPressed("up") {
-		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
-	}
-	if input.IsPressed("down") {
-		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
-	}
-	if input.IsPressed("turn-left") {
-		cam.Yaw -= dt * 360.0 / 2.0
-	}
-	if input.IsPressed("turn-right") {
-		cam.Yaw += dt * 360.0 / 2.0
-	}
-	if input.WasPressed("console") {
-		console.stepVisibility()
-	}
-	cam.Yaw += input.CursorDelta[0] * mouseSensitivity
-	cam.Pitch += input.CursorDelta[1] * mouseSensitivity
-	if cam.Pitch > 89 {
-		cam.Pitch = 89
-	}
-	if cam.Pitch < -89 {
-		cam.Pitch = -89
-	}
 }
 
 // TODO DEBUG REMOVE

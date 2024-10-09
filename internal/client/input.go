@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/internal/c3d"
 	"github.com/qbradq/cubit/internal/t"
 )
 
@@ -18,24 +19,30 @@ type keySpec struct {
 }
 
 var KeyConfig = map[string][]keySpec{
-	"cancel":     {{glfw.KeyEscape, 0}},
-	"confirm":    {{glfw.KeyEnter, 0}},
-	"forward":    {{glfw.KeyW, 0}},
-	"backward":   {{glfw.KeyS, 0}},
-	"left":       {{glfw.KeyA, 0}},
-	"right":      {{glfw.KeyD, 0}},
-	"up":         {{glfw.KeyV, 0}},
-	"down":       {{glfw.KeyC, 0}},
-	"turn-left":  {{glfw.KeyQ, 0}},
-	"turn-right": {{glfw.KeyE, 0}},
-	"console":    {{glfw.KeyGraveAccent, glfw.ModControl}},
-	"backspace":  {{glfw.KeyBackspace, 0}},
-	"delete":     {{glfw.KeyDelete, 0}},
-	"ui-left":    {{glfw.KeyLeft, 0}},
-	"ui-right":   {{glfw.KeyRight, 0}},
-	"ui-up":      {{glfw.KeyUp, 0}},
-	"ui-down":    {{glfw.KeyDown, 0}},
-	"debug":      {{glfw.KeyF12, 0}},
+	"cancel":      {{glfw.KeyEscape, 0}},
+	"confirm":     {{glfw.KeyEnter, 0}},
+	"forward":     {{glfw.KeyW, 0}},
+	"backward":    {{glfw.KeyS, 0}},
+	"left":        {{glfw.KeyA, 0}},
+	"right":       {{glfw.KeyD, 0}},
+	"up":          {{glfw.KeyV, 0}},
+	"down":        {{glfw.KeyC, 0}},
+	"turn-left":   {{glfw.KeyQ, 0}},
+	"turn-right":  {{glfw.KeyE, 0}},
+	"console":     {{glfw.KeyGraveAccent, glfw.ModControl}},
+	"backspace":   {{glfw.KeyBackspace, 0}},
+	"delete":      {{glfw.KeyDelete, 0}},
+	"ui-left":     {{glfw.KeyLeft, 0}},
+	"ui-right":    {{glfw.KeyRight, 0}},
+	"ui-up":       {{glfw.KeyUp, 0}},
+	"ui-down":     {{glfw.KeyDown, 0}},
+	"debug":       {{glfw.KeyF12, 0}},
+	"debug-x-inc": {{glfw.KeyPageUp, 0}},
+	"debug-x-dec": {{glfw.KeyPageDown, 0}},
+	"debug-y-inc": {{glfw.KeyHome, 0}},
+	"debug-y-dec": {{glfw.KeyEnd, 0}},
+	"debug-z-inc": {{glfw.KeyInsert, 0}},
+	"debug-z-dec": {{glfw.KeyDelete, 0}},
 }
 
 // Input manages the input and input configuration.
@@ -60,14 +67,7 @@ func NewInput(win *glfw.Window, screenSize mgl32.Vec2) *Input {
 	ret.CursorPosition = ret.lastCursorPos
 	win.SetKeyCallback(ret.keyCallback)
 	win.SetCharCallback(ret.charCallback)
-	// win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-	win.SetFocusCallback(func(w *glfw.Window, focused bool) {
-		if focused {
-			// win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-		} else {
-			win.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
-		}
-	})
+	win.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
 	win.SetCursorPosCallback(ret.posCallback)
 	win.SetMouseButtonCallback(ret.mouseButtonCallback)
 	return ret
@@ -189,5 +189,83 @@ func (n *Input) startFrame() {
 	}
 	for i := range n.buttonsPushed {
 		n.buttonsPushed[i] = false
+	}
+}
+
+// cameraInput handles camera input
+func cameraInput(cam *c3d.Camera) {
+	speed := walkSpeed * dt
+	if input.IsPressed("forward") {
+		dir := cam.Front
+		dir[1] = 0
+		dir = dir.Normalize().Mul(speed)
+		cam.Position = cam.Position.Add(dir)
+	}
+	if input.IsPressed("backward") {
+		dir := cam.Front
+		dir[1] = 0
+		dir = dir.Normalize().Mul(speed)
+		cam.Position = cam.Position.Sub(dir)
+	}
+	if input.IsPressed("left") {
+		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+	}
+	if input.IsPressed("right") {
+		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+	}
+	if input.IsPressed("up") {
+		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
+	}
+	if input.IsPressed("down") {
+		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
+	}
+	if input.IsPressed("turn-left") {
+		cam.Yaw -= dt * 360.0 / 2.0
+	}
+	if input.IsPressed("turn-right") {
+		cam.Yaw += dt * 360.0 / 2.0
+	}
+	if input.WasPressed("console") {
+		console.stepVisibility()
+	}
+	if input.ButtonPressed(2) {
+		win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+		app.CursorVisible = false
+		cam.Yaw += input.CursorDelta[0] * mouseSensitivity
+		cam.Pitch += input.CursorDelta[1] * mouseSensitivity
+		if cam.Pitch > 89 {
+			cam.Pitch = 89
+		}
+		if cam.Pitch < -89 {
+			cam.Pitch = -89
+		}
+	} else {
+		win.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
+		app.CursorVisible = true
+	}
+}
+
+// debugInput handles all debug key handling.
+func debugInput() {
+	if input.WasPressed("debug") {
+		app.DebugTextVisible = !app.DebugTextVisible
+	}
+	if input.WasPressed("debug-x-inc") {
+		debugVector[0] += 1.0
+	}
+	if input.WasPressed("debug-x-dec") {
+		debugVector[0] -= 1.0
+	}
+	if input.WasPressed("debug-y-inc") {
+		debugVector[1] += 1.0
+	}
+	if input.WasPressed("debug-y-dec") {
+		debugVector[1] -= 1.0
+	}
+	if input.WasPressed("debug-z-inc") {
+		debugVector[2] += 1.0
+	}
+	if input.WasPressed("debug-z-dec") {
+		debugVector[2] -= 1.0
 	}
 }

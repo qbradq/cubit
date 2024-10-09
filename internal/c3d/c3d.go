@@ -44,15 +44,18 @@ type ChunkDrawDescriptor struct {
 
 // ModelDrawDescriptor describes how and where to render a dynamic model.
 type ModelDrawDescriptor struct {
-	ID          uint32      // ID
-	Origin      mgl32.Vec3  // Origin of the model in model space
-	Orientation Orientation // Origin of the model
-	Root        *Part       // Root part that everything else is attached to
+	ID          uint32        // ID
+	Origin      mgl32.Vec3    // Origin of the model in model space
+	Orientation t.Orientation // Origin of the model
+	Root        *Part         // Root part that everything else is attached to
 }
 
-var XAxis mgl32.Vec3 = mgl32.Vec3{1, 0, 0}
-var YAxis mgl32.Vec3 = mgl32.Vec3{0, 1, 0}
-var ZAxis mgl32.Vec3 = mgl32.Vec3{0, 0, 1}
+// LineMeshDrawDescriptor describes how and where to render a line mesh.
+type LineMeshDrawDescriptor struct {
+	ID          uint32        // ID
+	Orientation t.Orientation // Origin of the model
+	Mesh        *LineMesh     // Mesh
+}
 
 type getObjIv func(uint32, uint32, *int32)
 type getObjInfoLog func(uint32, int32, *int32, *uint8)

@@ -5,13 +5,14 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 // ModelPartDescriptor describes how to initialize a part attached to a model.
 type ModelPartDescriptor struct {
 	Mesh        string                `json:"mesh"`        // Absolute path to the part mesh
 	Origin      mgl32.Vec3            `json:"origin"`      // Center point / rotation point of the part
-	Orientation c3d.Orientation       `json:"orientation"` // T-pose orientation
+	Orientation t.Orientation         `json:"orientation"` // T-pose orientation
 	Children    []ModelPartDescriptor `json:"children"`    // Child parts
 }
 
@@ -42,9 +43,12 @@ func registerModel(p string, m *ModelDescriptor) error {
 // given.
 func newPart(d *ModelPartDescriptor) *c3d.Part {
 	ret := &c3d.Part{
-		Mesh:        GetPartMesh(d.Mesh),
-		Origin:      d.Origin,
-		Orientation: d.Orientation,
+		Mesh:   GetPartMesh(d.Mesh),
+		Origin: d.Origin,
+		Orientation: t.Orientation{
+			P: d.Orientation.P.Mul(t.VoxelScale),
+			Q: d.Orientation.Q,
+		},
 	}
 	for _, cd := range d.Children {
 		ret.Children = append(ret.Children, newPart(&cd))
@@ -61,9 +65,10 @@ func NewModel(p string) *Model {
 	}
 	ret := &Model{
 		DrawDescriptor: &c3d.ModelDrawDescriptor{
-			ID:     1,
-			Origin: d.Origin,
-			Root:   newPart(&d.Root),
+			ID:          1,
+			Origin:      d.Origin.Mul(t.VoxelScale),
+			Orientation: t.O(),
+			Root:        newPart(&d.Root),
 		},
 	}
 	return ret

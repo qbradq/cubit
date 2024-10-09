@@ -8,17 +8,17 @@ import (
 
 // Part manages a voxel volume that represents one body part of a model.
 type Part struct {
-	Mesh        *VoxelMesh  // Voxel mesh for the part
-	Origin      mgl32.Vec3  // Center point of the part
-	Orientation Orientation // Current part orientation relative to the parent
-	Children    []*Part     // Child parts, if any
+	Mesh        *VoxelMesh    // Voxel mesh for the part
+	Origin      mgl32.Vec3    // Center point of the part
+	Orientation t.Orientation // Current part orientation relative to the parent
+	Children    []*Part       // Child parts, if any
 }
 
 // draw draws the part relative to the given orientation.
-func (p *Part) draw(prg *program, o *Orientation) {
+func (p *Part) draw(prg *program, o t.Orientation) {
 	po := p.Orientation
-	po.pos = po.pos.Mul(t.VoxelScale)
-	(&po).Accumulate(o)
+	po.Q = o.Q.Mul(po.Q)
+	po.P = o.Q.Rotate(po.P).Add(o.P)
 	if p.Mesh != nil {
 		mm := po.TransformMatrix()
 		gl.UniformMatrix4fv(prg.uni("uModelMatrix"), 1, false, &mm[0])
@@ -27,6 +27,6 @@ func (p *Part) draw(prg *program, o *Orientation) {
 		p.Mesh.draw(prg)
 	}
 	for _, c := range p.Children {
-		c.draw(prg, &po)
+		c.draw(prg, po)
 	}
 }

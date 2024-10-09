@@ -5,19 +5,19 @@
         "root": {
             "mesh": "/cubit/parts/characters/brad/body",
             "origin": [4, 0, 3],
-            "orientation": [0, 0, 0, 0, 0, 0],
+            "orientation": [0, 0, 0, 45, 0, 0],
             "children": [
                 {
                     "mesh": "/cubit/parts/characters/brad/leg",
                     "origin": [2, 12, 5],
-                    "orientation": [3, 0, 0, 0, 0, 0],
+                    "orientation": [3, 0, 0, 45, 0, 0],
                     "children": [
                     ]
                 },
                 {
                     "mesh": "/cubit/parts/characters/brad/leg",
                     "origin": [2, 12, 5],
-                    "orientation": [-3, -1, 0, 0, 0, 0],
+                    "orientation": [-3, -1, 0, 45, 0, 0],
                     "children": [
                     ]
                 }

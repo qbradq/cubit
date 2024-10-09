@@ -11,27 +11,28 @@ import (
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	CursorVisible      bool                   // If true, draw the cursor
-	CrosshairVisible   bool                   // If true, draw the crosshair
-	DebugTextVisible   bool                   // If true, draw the debug text
-	ChunkBoundsVisible bool                   // If true, draws the chunk bounds
-	chunkDDs           []*ChunkDrawDescriptor // List of chunks to draw
-	modelDDs           []*ModelDrawDescriptor // List of models to draw
-	uiMeshes           []*UIMesh              // List of UI meshes to draw
-	cursor             *UIMesh                // Cursor mesh
-	crosshair          *UIMesh                // Crosshair mesh
-	axis               *LineMesh              // Debug axis indicator
-	pWireFrame         *program               // RGB with no lighting
-	pVoxelMesh         *program               // RGB voxel meshes
-	pModelMesh         *program               // RGB voxel meshes rigged for animation
-	pCubeMesh          *program               // Face atlas texturing
-	pText              *program               // Text rendering
-	pUI                *program               // UI tile rendering
-	faces              *FaceAtlas             // Face atlas to use for cube mesh rendering
-	tiles              *FaceAtlas             // Face atlas to use for ui tile rendering
-	fm                 *fontManager           // Font manager for the application
-	debugLines         []ColoredString        // Lines for the debug messages
-	debugText          *TextMesh              // Debug text
+	CursorVisible      bool                      // If true, draw the cursor
+	CrosshairVisible   bool                      // If true, draw the crosshair
+	DebugTextVisible   bool                      // If true, draw the debug text
+	ChunkBoundsVisible bool                      // If true, draws the chunk bounds
+	chunkDDs           []*ChunkDrawDescriptor    // List of chunks to draw
+	modelDDs           []*ModelDrawDescriptor    // List of models to draw
+	lineDDs            []*LineMeshDrawDescriptor // List of line meshes to draw
+	uiMeshes           []*UIMesh                 // List of UI meshes to draw
+	cursor             *UIMesh                   // Cursor mesh
+	crosshair          *UIMesh                   // Crosshair mesh
+	axis               *LineMesh                 // Debug axis indicator
+	pWireFrame         *program                  // RGB with no lighting
+	pVoxelMesh         *program                  // RGB voxel meshes
+	pModelMesh         *program                  // RGB voxel meshes rigged for animation
+	pCubeMesh          *program                  // Face atlas texturing
+	pText              *program                  // Text rendering
+	pUI                *program                  // UI tile rendering
+	faces              *FaceAtlas                // Face atlas to use for cube mesh rendering
+	tiles              *FaceAtlas                // Face atlas to use for ui tile rendering
+	fm                 *fontManager              // Font manager for the application
+	debugLines         []ColoredString           // Lines for the debug messages
+	debugText          *TextMesh                 // Debug text
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -80,11 +81,21 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	ret.tiles.upload(ret.pUI)
 	ret.tiles.freeMemory()
 	// Axis indicator
-	ret.axis = NewLineMesh()
-	ret.axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
-	ret.axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 1, 0}, [4]uint8{0, 255, 0, 255})
-	ret.axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 0, 1}, [4]uint8{0, 0, 255, 255})
+	ret.genAxis()
 	return ret, nil
+}
+
+func (a *App) genAxis() {
+	a.axis = NewLineMesh()
+	c := [4]uint8{255, 255, 255, 255}
+	for i := float32(0); i <= 10; i++ {
+		a.axis.Line(mgl32.Vec3{i, 0, 0}, mgl32.Vec3{i, 10, 0}, c)
+		a.axis.Line(mgl32.Vec3{i, 0, 0}, mgl32.Vec3{i, 0, 10}, c)
+		a.axis.Line(mgl32.Vec3{0, i, 0}, mgl32.Vec3{10, i, 0}, c)
+		a.axis.Line(mgl32.Vec3{0, i, 0}, mgl32.Vec3{0, i, 10}, c)
+		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{0, 10, i}, c)
+		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{10, 0, i}, c)
+	}
 }
 
 // Delete removes all memory and GPU resources managed by the app.
@@ -192,6 +203,22 @@ func (a *App) RemoveModelDD(id uint32) {
 	}
 }
 
+// AddLineDD adds the line draw descriptor to the list to draw.
+func (a *App) AddLineDD(d *LineMeshDrawDescriptor) {
+	a.lineDDs = append(a.lineDDs, d)
+}
+
+// RemoveLineDD removes the line draw descriptor by ID.
+func (a *App) RemoveLineDD(id uint32) {
+	for i := 0; i < len(a.lineDDs); i++ {
+		if a.lineDDs[i].ID == id {
+			a.lineDDs[i] = a.lineDDs[len(a.lineDDs)-1]
+			a.lineDDs = a.lineDDs[:len(a.lineDDs)]
+			return
+		}
+	}
+}
+
 // Draw draws everything with the given camera for 3D space..
 func (a *App) Draw(c *Camera) {
 	// Variable setup
@@ -206,6 +233,18 @@ func (a *App) Draw(c *Camera) {
 	a.pWireFrame.use()
 	gl.UniformMatrix4fv(int32(a.pWireFrame.uni("uProjectionMatrix")), 1, false,
 		&pMat[0])
+	mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
+	gl.UniformMatrix4fv(a.pWireFrame.uni("uModelViewMatrix"), 1, false, &mt[0])
+	a.axis.draw(a.pWireFrame)
+	for _, d := range a.lineDDs {
+		if d.Mesh == nil {
+			continue
+		}
+		mvm := mt.Mul4(d.Orientation.TransformMatrix())
+		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
+			&mvm[0])
+		d.Mesh.draw(a.pWireFrame)
+	}
 	// if a.ChunkBoundsVisible {
 	// 	for _, m := range a.cubeMeshes {
 	// 		mt := c.TransformMatrix()
@@ -214,9 +253,6 @@ func (a *App) Draw(c *Camera) {
 	// 		m.m.drawAABB(a.pRGBFB)
 	// 	}
 	// }
-	mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
-	gl.UniformMatrix4fv(a.pWireFrame.uni("uModelViewMatrix"), 1, false, &mt[0])
-	a.axis.draw(a.pWireFrame)
 	// Draw chunks
 	a.pCubeMesh.use()
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,
@@ -248,8 +284,8 @@ func (a *App) Draw(c *Camera) {
 			if v.Mesh == nil {
 				continue
 			}
-			o := *FacingToOrientation[v.Facing]
-			o.pos = v.Position.Add(mgl32.Vec3{8, 8, 8}.Mul(t.VoxelScale))
+			o := t.FacingToOrientation[v.Facing]
+			o.P = v.Position.Add(mgl32.Vec3{8, 8, 8}.Mul(t.VoxelScale))
 			mm := o.TransformMatrix()
 			gl.UniformMatrix4fv(a.pVoxelMesh.uni("uModelMatrix"), 1, false,
 				&mm[0])
@@ -266,9 +302,7 @@ func (a *App) Draw(c *Camera) {
 		&vMat[0])
 	for _, d := range a.modelDDs {
 		if d.Root != nil {
-			ro := d.Orientation
-			ro.Translate(d.Origin.Mul(t.VoxelScale))
-			d.Root.draw(a.pModelMesh, &ro)
+			d.Root.draw(a.pModelMesh, d.Orientation)
 		}
 	}
 	// Draw UI elements, tiles layer

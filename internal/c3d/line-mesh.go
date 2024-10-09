@@ -6,25 +6,25 @@ import (
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/qbradq/cubit/internal/t"
 )
 
 // LineMesh provides a simple axis indicator made of full-bright lines.
 type LineMesh struct {
-	Orientation Orientation // Orientation of the wire frame.
-	d           []byte      // Raw vertex data
-	count       int32       // Count of vertexes
-	vao         uint32      // Vertex Array Object ID
-	vbo         uint32      // Vertex Buffer Object ID
-	vboDirty    bool        // If true the VBO needs to be updated on the GPU
-	vbuf        [30]byte    // Double vertex line buffer
+	Orientation t.Orientation // Orientation of the wire frame.
+	d           []byte        // Raw vertex data
+	count       int32         // Count of vertexes
+	vao         uint32        // Vertex Array Object ID
+	vbo         uint32        // Vertex Buffer Object ID
+	vboDirty    bool          // If true the VBO needs to be updated on the GPU
+	vbuf        [30]byte      // Double vertex line buffer
 }
 
 // NewLineMesh creates a new axis indicator.
 func NewLineMesh() *LineMesh {
 	ret := &LineMesh{
-		vao:         invalidVAO,
-		vbo:         invalidVBO,
-		Orientation: *NewOrientation(mgl32.Vec3{0, 0, 0}, 0, 0, 0),
+		vao: invalidVAO,
+		vbo: invalidVBO,
 	}
 	return ret
 }
