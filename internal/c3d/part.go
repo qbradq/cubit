@@ -8,6 +8,7 @@ import (
 
 // Part manages a voxel volume that represents one body part of a model.
 type Part struct {
+	ID          string        // Unique ID of the part for animation references
 	Mesh        *VoxelMesh    // Voxel mesh for the part
 	Origin      mgl32.Vec3    // Center point of the part
 	Orientation t.Orientation // Current part orientation relative to the parent

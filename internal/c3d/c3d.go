@@ -45,6 +45,7 @@ type ChunkDrawDescriptor struct {
 // ModelDrawDescriptor describes how and where to render a dynamic model.
 type ModelDrawDescriptor struct {
 	ID          uint32        // ID
+	Bounds      AABB          // Bounds of the model
 	Origin      mgl32.Vec3    // Origin of the model in model space
 	Orientation t.Orientation // Origin of the model
 	Root        *Part         // Root part that everything else is attached to
@@ -76,4 +77,39 @@ func getGlError(glHandle uint32, checkTrueParam uint32, getObjIvFn getObjIv,
 		return fmt.Errorf("%s: %s", failMsg, log)
 	}
 	return nil
+}
+
+// AABB represents an axis-aligned bounding box with an optional bounds mesh.
+type AABB struct {
+	Bounds t.AABB
+	mesh   *LineMesh
+}
+
+// draw draws the bounds of the line.
+func (b *AABB) draw(prg *program) {
+	if b.mesh == nil {
+		b.mesh = NewLineMesh()
+		c := [4]uint8{0, 255, 0, 255}
+		bnw := mgl32.Vec3{b.Bounds[0][0], b.Bounds[0][1], b.Bounds[0][2]}
+		bne := mgl32.Vec3{b.Bounds[1][0], b.Bounds[0][1], b.Bounds[0][2]}
+		bsw := mgl32.Vec3{b.Bounds[0][0], b.Bounds[0][1], b.Bounds[1][2]}
+		bse := mgl32.Vec3{b.Bounds[1][0], b.Bounds[0][1], b.Bounds[1][2]}
+		tnw := mgl32.Vec3{b.Bounds[0][0], b.Bounds[1][1], b.Bounds[0][2]}
+		tne := mgl32.Vec3{b.Bounds[1][0], b.Bounds[1][1], b.Bounds[0][2]}
+		tsw := mgl32.Vec3{b.Bounds[0][0], b.Bounds[1][1], b.Bounds[1][2]}
+		tse := mgl32.Vec3{b.Bounds[1][0], b.Bounds[1][1], b.Bounds[1][2]}
+		b.mesh.Line(bnw, bne, c)
+		b.mesh.Line(bne, bse, c)
+		b.mesh.Line(bse, bsw, c)
+		b.mesh.Line(bsw, bnw, c)
+		b.mesh.Line(tnw, tne, c)
+		b.mesh.Line(tne, tse, c)
+		b.mesh.Line(tse, tsw, c)
+		b.mesh.Line(tsw, tnw, c)
+		b.mesh.Line(bnw, tnw, c)
+		b.mesh.Line(bne, tne, c)
+		b.mesh.Line(bsw, tsw, c)
+		b.mesh.Line(bse, tse, c)
+	}
+	b.mesh.draw(prg)
 }

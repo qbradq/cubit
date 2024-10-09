@@ -84,30 +84,22 @@ func Main() {
 	app.CrosshairVisible = true
 	app.SetCursor(mod.GetUITile("/cubit/004"), layerCursor)
 	app.CursorVisible = true
-	app.ChunkBoundsVisible = true
+	app.WireFramesVisible = true
 	// World setup
 	world = t.NewWorld()
 	TestGen(world)
 	chunk := NewChunk(t.IVec3{0, 0, 0})
 	chunk.Update()
-	// app.AddChunkDD(chunk.cdd)
-	// app.AddChunkDD(&c3d.ChunkDrawDescriptor{
-	// 	ID: 1,
-	// 	VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{
-	// 		{
-	// 			ID:   1,
-	// 			Mesh: mod.GetVoxByPath("/cubit/vox/debug").Mesh,
-	// 		},
-	// 	},
-	// })
-	// model := mod.NewModel("/cubit/models/characters/brad")
-	model := mod.NewModel("/cubit/models/characters/test")
-	// ddr := model.DrawDescriptor
+	app.AddChunkDD(chunk.cdd)
+	model := mod.NewModel("/cubit/models/characters/brad")
+	model.DrawDescriptor.Orientation.P = mgl32.Vec3{6.5, 1.75, 10.5}
+	model.DrawDescriptor.Orientation = model.DrawDescriptor.Orientation.Yaw(180)
+	model.StartAnimation("/cubit/animations/characters/walk", "legs")
 	app.AddModelDD(model.DrawDescriptor)
 	// cam := c3d.NewCamera(mgl32.Vec3{2, 2, 5})
-	cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
-	// cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
-	// cam.Yaw = 90.001
+	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
+	cam.Yaw = 90.001
 	// axis := c3d.NewLineMesh()
 	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
 	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 1, 0}, [4]uint8{0, 255, 0, 255})
@@ -119,6 +111,7 @@ func Main() {
 	// }
 	// app.AddLineDD(ldd)
 	// Main loop
+	// debugVector = mgl32.Vec3{1, 1, 1}
 	lastFrame := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state
@@ -129,6 +122,7 @@ func Main() {
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
 		console.update()
+		model.Update(dt)
 		// model.DrawDescriptor.Root.Orientation =
 		// 	model.DrawDescriptor.Root.Orientation.Pitch(
 		// 		mgl32.DegToRad(debugVector[0] * 15))
@@ -143,6 +137,7 @@ func Main() {
 		// ddr.Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[0]*15.0), 0, 0, mgl32.XYX)
 		// ddr.Children[0].Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[1]*15.0), 0, 0, mgl32.YXY)
 		// ddr.Children[0].Children[0].Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[2]*15.0), 0, 0, mgl32.ZYZ)
+		// model.DrawDescriptor.Orientation.P = debugVector
 		// Handle input
 		debugInput()
 		if console.isFocused() {

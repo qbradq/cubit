@@ -75,6 +75,7 @@ func ReloadModInfo() error {
 	UITiles = c3d.NewFaceAtlas()
 	partsMeshMap = map[string]*c3d.VoxelMesh{}
 	modelsMap = map[string]*ModelDescriptor{}
+	animationsMap = map[string]Animation{}
 	dirs, err := os.ReadDir("mods")
 	if err != nil {
 		return err
@@ -126,6 +127,9 @@ func LoadMods(mods ...string) error {
 		return err
 	}
 	if err := stage(func(m *Mod) error { return m.loadModels() }); err != nil {
+		return err
+	}
+	if err := stage(func(m *Mod) error { return m.loadAnimations() }); err != nil {
 		return err
 	}
 	return nil
@@ -455,6 +459,49 @@ func (m *Mod) loadModels() error {
 		}
 		for k, md := range mds {
 			if err := registerModel(modPath+"/"+k, md); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// loadAnimations loads all animation definitions for the mod.
+func (m *Mod) loadAnimations() error {
+	return fs.WalkDir(m.f, "animations", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return m.wrap("walking animations directory, path=%s", err, path)
+		}
+		if len(path) < 1 {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		ext = strings.ToLower(ext)
+		ns := path[:len(path)-len(ext)]
+		if ext != ".json" {
+			return nil
+		}
+		modPath := "/" + m.ID + "/" + ns
+		f, err := m.f.Open(path)
+		if err != nil {
+			return m.wrap("opening animations file %s", err, path)
+		}
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return m.wrap("reading animations file %s", err, path)
+		}
+		as := map[string]*Animation{}
+		if err := json.Unmarshal(data, &as); err != nil {
+			return m.wrap("unmarshaling animations file %s", err, path)
+		}
+		for k, a := range as {
+			if err := registerAnimation(modPath+"/"+k, *a); err != nil {
 				return err
 			}
 		}

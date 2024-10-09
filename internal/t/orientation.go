@@ -66,17 +66,26 @@ func (o Orientation) Translate(t mgl32.Vec3) Orientation {
 
 // Pitch rotations the orientation about the X axis by r radians.
 func (o Orientation) Pitch(r float32) Orientation {
-	return o.Accumulate(Orientation{Q: mgl32.AnglesToQuat(0, 0, r, mgl32.ZYX)})
+	return Orientation{
+		P: o.P,
+		Q: mgl32.AnglesToQuat(0, 0, r, mgl32.ZYX).Mul(o.Q).Normalize(),
+	}
 }
 
 // Yaw rotations the orientation about the Y axis by r radians.
 func (o Orientation) Yaw(r float32) Orientation {
-	return o.Accumulate(Orientation{Q: mgl32.AnglesToQuat(0, r, 0, mgl32.ZYX)})
+	return Orientation{
+		P: o.P,
+		Q: mgl32.AnglesToQuat(0, r, 0, mgl32.ZYX).Mul(o.Q).Normalize(),
+	}
 }
 
 // Roll rotations the orientation about the Z axis by r radians.
 func (o Orientation) Roll(r float32) Orientation {
-	return o.Accumulate(Orientation{Q: mgl32.AnglesToQuat(r, 0, 0, mgl32.ZYX)})
+	return Orientation{
+		P: o.P,
+		Q: mgl32.AnglesToQuat(r, 0, 0, mgl32.ZYX).Mul(o.Q).Normalize(),
+	}
 }
 
 // RotationMatrix returns the rotation matrix for this orientation.
@@ -92,6 +101,13 @@ func (o Orientation) TranslationMatrix() mgl32.Mat4 {
 // TransformMatrix returns the full transform matrix for this orientation.
 func (o Orientation) TransformMatrix() mgl32.Mat4 {
 	return o.TranslationMatrix().Mul4(o.RotationMatrix())
+}
+
+// VoxelScaleTransformMatrix returns the transform matrix of the orientation
+// with the position component multiplied by t.VoxelScale.
+func (o Orientation) VoxelScaleTransformMatrix() mgl32.Mat4 {
+	o.P = o.P.Mul(VoxelScale)
+	return o.TransformMatrix()
 }
 
 // Accumulate accumulates the orientation and position in model space and

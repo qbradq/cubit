@@ -1,45 +1,50 @@
 {
     "brad": {
-        "origin": [0, 12, 0],
-        "orientation": [0, 0, 0, 0, 0, 0],
+        "bounds": [-7, -13, -7, 7, 19, 7],
         "root": {
-            "mesh": "/cubit/parts/characters/brad/body",
-            "origin": [4, 0, 3],
-            "orientation": [0, 0, 0, 45, 0, 0],
+            "id": "pivot",
             "children": [
                 {
-                    "mesh": "/cubit/parts/characters/brad/leg",
-                    "origin": [2, 12, 5],
-                    "orientation": [3, 0, 0, 45, 0, 0],
+                    "id": "body",
+                    "mesh": "/cubit/parts/characters/brad/body",
+                    "origin": [4, 0, 3],
+                    "orientation": [0, 0, 0, 0, 0, 0],
                     "children": [
+                        {
+                            "id": "rightArm",
+                            "mesh": "/cubit/parts/characters/brad/arm",
+                            "origin": [2, 12, 2],
+                            "orientation": [6, 11, 0, 0, 0, 0]
+                        },
+                        {
+                            "id": "leftArm",
+                            "mesh": "/cubit/parts/characters/brad/arm",
+                            "origin": [2, 12, 2],
+                            "orientation": [-6, 11, 0, 0, 0, 0]
+                        },
+                        {
+                            "id": "head",
+                            "mesh": "/cubit/parts/characters/brad/head",
+                            "origin": [5, 0, 5],
+                            "orientation": [0, 12, 0, 0, 0, 0]
+                        }
                     ]
                 },
                 {
-                    "mesh": "/cubit/parts/characters/brad/leg",
-                    "origin": [2, 12, 5],
-                    "orientation": [-3, -1, 0, 45, 0, 0],
-                    "children": [
-                    ]
-                }
-            ]
-        }
-    },
-    "test": {
-        "root": {
-            "mesh": "/cubit/parts/characters/brad/leg",
-            "origin": [2, 12, 5],
-            "orientation": [0, 0, 0, 45, 0, 0],
-            "children": [
-                {
-
-                    "mesh": "/cubit/parts/characters/brad/leg",
-                    "origin": [2, 12, 5],
-                    "orientation": [0, -12, 0, 0, 45, 0],
+                    "id": "waist",
+                    "orientation": [0, 0, 0, 0, 0, 0],
                     "children": [
                         {
+                            "id": "rightLeg",
                             "mesh": "/cubit/parts/characters/brad/leg",
                             "origin": [2, 12, 5],
-                            "orientation": [0, -12, 0, 0, 0, 45]
+                            "orientation": [2, 0, 0, 0, 0, 0]
+                        },
+                        {
+                            "id": "leftLeg",
+                            "mesh": "/cubit/parts/characters/brad/leg",
+                            "origin": [2, 12, 5],
+                            "orientation": [-2, 0, 0, 0, 0, 0]
                         }
                     ]
                 }

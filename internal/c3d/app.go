@@ -11,28 +11,29 @@ import (
 // App manages a set of drawable objects and the shader programs used to draw
 // them.
 type App struct {
-	CursorVisible      bool                      // If true, draw the cursor
-	CrosshairVisible   bool                      // If true, draw the crosshair
-	DebugTextVisible   bool                      // If true, draw the debug text
-	ChunkBoundsVisible bool                      // If true, draws the chunk bounds
-	chunkDDs           []*ChunkDrawDescriptor    // List of chunks to draw
-	modelDDs           []*ModelDrawDescriptor    // List of models to draw
-	lineDDs            []*LineMeshDrawDescriptor // List of line meshes to draw
-	uiMeshes           []*UIMesh                 // List of UI meshes to draw
-	cursor             *UIMesh                   // Cursor mesh
-	crosshair          *UIMesh                   // Crosshair mesh
-	axis               *LineMesh                 // Debug axis indicator
-	pWireFrame         *program                  // RGB with no lighting
-	pVoxelMesh         *program                  // RGB voxel meshes
-	pModelMesh         *program                  // RGB voxel meshes rigged for animation
-	pCubeMesh          *program                  // Face atlas texturing
-	pText              *program                  // Text rendering
-	pUI                *program                  // UI tile rendering
-	faces              *FaceAtlas                // Face atlas to use for cube mesh rendering
-	tiles              *FaceAtlas                // Face atlas to use for ui tile rendering
-	fm                 *fontManager              // Font manager for the application
-	debugLines         []ColoredString           // Lines for the debug messages
-	debugText          *TextMesh                 // Debug text
+	CursorVisible     bool                      // If true, draw the cursor
+	CrosshairVisible  bool                      // If true, draw the crosshair
+	DebugTextVisible  bool                      // If true, draw the debug text
+	WireFramesVisible bool                      // If true, draws wire frames
+	chunkDDs          []*ChunkDrawDescriptor    // List of chunks to draw
+	modelDDs          []*ModelDrawDescriptor    // List of models to draw
+	lineDDs           []*LineMeshDrawDescriptor // List of line meshes to draw
+	uiMeshes          []*UIMesh                 // List of UI meshes to draw
+	cursor            *UIMesh                   // Cursor mesh
+	crosshair         *UIMesh                   // Crosshair mesh
+	axis              *LineMesh                 // Debug axis indicator
+	chunkBounds       AABB                      // Cached chunk bounds wire frame
+	pWireFrame        *program                  // RGB with no lighting
+	pVoxelMesh        *program                  // RGB voxel meshes
+	pModelMesh        *program                  // RGB voxel meshes rigged for animation
+	pCubeMesh         *program                  // Face atlas texturing
+	pText             *program                  // Text rendering
+	pUI               *program                  // UI tile rendering
+	faces             *FaceAtlas                // Face atlas to use for cube mesh rendering
+	tiles             *FaceAtlas                // Face atlas to use for ui tile rendering
+	fm                *fontManager              // Font manager for the application
+	debugLines        []ColoredString           // Lines for the debug messages
+	debugText         *TextMesh                 // Debug text
 }
 
 // NewApp constructs a new App object with the given resources ready to draw.
@@ -80,8 +81,14 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	}
 	ret.tiles.upload(ret.pUI)
 	ret.tiles.freeMemory()
-	// Axis indicator
+	// Internal meshes
 	ret.genAxis()
+	ret.chunkBounds = AABB{
+		Bounds: t.AABB{
+			mgl32.Vec3{0, 0, 0},
+			mgl32.Vec3{16, 16, 16},
+		},
+	}
 	return ret, nil
 }
 
@@ -230,29 +237,39 @@ func (a *App) Draw(c *Camera) {
 	// Frame setup
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	// Draw wire frames
-	a.pWireFrame.use()
-	gl.UniformMatrix4fv(int32(a.pWireFrame.uni("uProjectionMatrix")), 1, false,
-		&pMat[0])
-	mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
-	gl.UniformMatrix4fv(a.pWireFrame.uni("uModelViewMatrix"), 1, false, &mt[0])
-	a.axis.draw(a.pWireFrame)
-	for _, d := range a.lineDDs {
-		if d.Mesh == nil {
-			continue
+	if a.WireFramesVisible {
+		// Debug axis indicator
+		a.pWireFrame.use()
+		gl.UniformMatrix4fv(int32(a.pWireFrame.uni("uProjectionMatrix")), 1, false,
+			&pMat[0])
+		mt := c.TransformMatrix().Mul4(a.axis.Orientation.TransformMatrix())
+		gl.UniformMatrix4fv(a.pWireFrame.uni("uModelViewMatrix"), 1, false, &mt[0])
+		a.axis.draw(a.pWireFrame)
+		// Debug line meshes
+		for _, d := range a.lineDDs {
+			if d.Mesh == nil {
+				continue
+			}
+			mvm := mt.Mul4(d.Orientation.TransformMatrix())
+			gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
+				&mvm[0])
+			d.Mesh.draw(a.pWireFrame)
 		}
-		mvm := mt.Mul4(d.Orientation.TransformMatrix())
-		gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
-			&mvm[0])
-		d.Mesh.draw(a.pWireFrame)
+		// Chunk bounds
+		for _, d := range a.chunkDDs {
+			mvm := mt.Mul4(t.O().Translate(d.CubeDD.Position).TransformMatrix())
+			gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
+				&mvm[0])
+			a.chunkBounds.draw(a.pWireFrame)
+		}
+		// Model bounds
+		for _, m := range a.modelDDs {
+			mvm := mt.Mul4(t.O().Translate(m.Orientation.P).TransformMatrix())
+			gl.UniformMatrix4fv(a.pCubeMesh.uni("uModelViewMatrix"), 1, false,
+				&mvm[0])
+			m.Bounds.draw(a.pWireFrame)
+		}
 	}
-	// if a.ChunkBoundsVisible {
-	// 	for _, m := range a.cubeMeshes {
-	// 		mt := c.TransformMatrix()
-	// 		gl.UniformMatrix4fv(a.pRGBFB.uni("uModelViewMatrix"), 1, false,
-	// 			&mt[0])
-	// 		m.m.drawAABB(a.pRGBFB)
-	// 	}
-	// }
 	// Draw chunks
 	a.pCubeMesh.use()
 	gl.UniformMatrix4fv(int32(a.pCubeMesh.uni("uProjectionMatrix")), 1, false,

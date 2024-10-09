@@ -10,6 +10,7 @@ import (
 
 // ModelPartDescriptor describes how to initialize a part attached to a model.
 type ModelPartDescriptor struct {
+	ID          string                `json:"id"`          // ID of the part for animations
 	Mesh        string                `json:"mesh"`        // Absolute path to the part mesh
 	Origin      mgl32.Vec3            `json:"origin"`      // Center point / rotation point of the part
 	Orientation t.Orientation         `json:"orientation"` // T-pose orientation
@@ -18,13 +19,21 @@ type ModelPartDescriptor struct {
 
 // ModelDescriptor describes how to initialize a model.
 type ModelDescriptor struct {
-	Origin mgl32.Vec3           `json:"origin"`
-	Root   *ModelPartDescriptor `json:"root"` // Root part
+	Bounds t.AABB               `json:"bounds"` // Bounding box of the model
+	Root   *ModelPartDescriptor `json:"root"`   // Root part
+}
+
+// animationContext is a context for an animation.
+type animationContext struct {
+	a       *c3d.Animation // Animation to play
+	running bool           // If true the animation is running
 }
 
 // Model describes a hierarchy of parts with defined animations.
 type Model struct {
-	DrawDescriptor *c3d.ModelDrawDescriptor // The draw descriptor this model manages
+	DrawDescriptor *c3d.ModelDrawDescriptor    // The draw descriptor this model manages
+	joints         map[string]*mgl32.Quat      // Joint name to rotation quaternion mapping
+	animations     map[string]animationContext // Animation layer name to running animation map
 }
 
 // modelsMap is the mapping of resource paths to model descriptors.
@@ -43,6 +52,7 @@ func registerModel(p string, m *ModelDescriptor) error {
 // given.
 func newPart(d *ModelPartDescriptor) *c3d.Part {
 	ret := &c3d.Part{
+		ID:     d.ID,
 		Mesh:   GetPartMesh(d.Mesh),
 		Origin: d.Origin,
 		Orientation: t.Orientation{
@@ -65,11 +75,55 @@ func NewModel(p string) *Model {
 	}
 	ret := &Model{
 		DrawDescriptor: &c3d.ModelDrawDescriptor{
-			ID:          1,
-			Origin:      d.Origin.Mul(t.VoxelScale),
+			ID: 1,
+			Bounds: c3d.AABB{
+				Bounds: d.Bounds,
+			},
 			Orientation: t.O(),
 			Root:        newPart(d.Root),
 		},
+		joints:     make(map[string]*mgl32.Quat),
+		animations: make(map[string]animationContext),
 	}
+	var fn func(p *c3d.Part)
+	fn = func(p *c3d.Part) {
+		ret.joints[p.ID] = &p.Orientation.Q
+		for _, c := range p.Children {
+			fn(c)
+		}
+	}
+	fn(ret.DrawDescriptor.Root)
 	return ret
+}
+
+// StartAnimation starts the animation identified by the resource path on the
+// model on the given animation layer.
+func (m *Model) StartAnimation(p, l string) {
+	var a *c3d.Animation
+	if ac, found := m.animations[l]; found {
+		if ac.running {
+			return
+		}
+		a = ac.a
+	} else {
+		a = getAnimation(p, m.joints)
+	}
+	if a == nil {
+		return
+	}
+	m.animations[l] = animationContext{
+		a:       a,
+		running: true,
+	}
+	a.Play()
+}
+
+// Update updates the animations of the model.
+func (m *Model) Update(dt float32) {
+	for _, a := range m.animations {
+		if !a.running {
+			continue
+		}
+		a.a.Update(dt)
+	}
 }
