@@ -32,6 +32,7 @@ type animationContext struct {
 // Model describes a hierarchy of parts with defined animations.
 type Model struct {
 	DrawDescriptor *c3d.ModelDrawDescriptor    // The draw descriptor this model manages
+	Bounds         t.AABB                      // Model bounds in world coordinates
 	joints         map[string]*mgl32.Quat      // Joint name to rotation quaternion mapping
 	animations     map[string]animationContext // Animation layer name to running animation map
 }
@@ -118,7 +119,8 @@ func (m *Model) StartAnimation(p, l string) {
 	a.Play()
 }
 
-// Update updates the animations of the model.
+// Update should be called once per frame to update internal model state, such
+// as animations.
 func (m *Model) Update(dt float32) {
 	for _, a := range m.animations {
 		if !a.running {
@@ -126,4 +128,8 @@ func (m *Model) Update(dt float32) {
 		}
 		a.a.Update(dt)
 	}
+	m.Bounds[0] = m.DrawDescriptor.Bounds.Bounds[0].Add(
+		m.DrawDescriptor.Orientation.P)
+	m.Bounds[1] = m.DrawDescriptor.Bounds.Bounds[1].Add(
+		m.DrawDescriptor.Orientation.P)
 }

@@ -81,10 +81,11 @@ func Main() {
 		"%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
 	console.add(app)
 	app.SetCrosshair(mod.GetUITile("/cubit/003"), layerCrosshair)
-	app.CrosshairVisible = true
 	app.SetCursor(mod.GetUITile("/cubit/004"), layerCursor)
+	app.CrosshairVisible = true
 	app.CursorVisible = true
 	app.WireFramesVisible = true
+	app.DebugTextVisible = true
 	// World setup
 	world = t.NewWorld()
 	TestGen(world)
@@ -98,7 +99,7 @@ func Main() {
 	app.AddModelDD(model.DrawDescriptor)
 	// cam := c3d.NewCamera(mgl32.Vec3{2, 2, 5})
 	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
-	cam := c3d.NewCamera(mgl32.Vec3{7, 2, 7})
+	cam := c3d.NewCamera(mgl32.Vec3{6.5, 2, 7})
 	cam.Yaw = 90.001
 	// axis := c3d.NewLineMesh()
 	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
@@ -123,21 +124,6 @@ func Main() {
 		lastFrame = currentFrame
 		console.update()
 		model.Update(dt)
-		// model.DrawDescriptor.Root.Orientation =
-		// 	model.DrawDescriptor.Root.Orientation.Pitch(
-		// 		mgl32.DegToRad(debugVector[0] * 15))
-		// model.DrawDescriptor.Root.Children[0].Orientation =
-		// 	model.DrawDescriptor.Root.Children[0].Orientation.Pitch(
-		// 		mgl32.DegToRad(debugVector[1] * 15))
-		// model.DrawDescriptor.Root.Children[0].Children[0].Orientation =
-		// 	model.DrawDescriptor.Root.Children[0].Children[0].Orientation.Pitch(
-		// 		mgl32.DegToRad(debugVector[2] * 15))
-		// debugVector = mgl32.Vec3{}
-		// ddr := model.DrawDescriptor.Root
-		// ddr.Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[0]*15.0), 0, 0, mgl32.XYX)
-		// ddr.Children[0].Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[1]*15.0), 0, 0, mgl32.YXY)
-		// ddr.Children[0].Children[0].Orientation.Q = mgl32.AnglesToQuat(mgl32.DegToRad(debugVector[2]*15.0), 0, 0, mgl32.ZYZ)
-		// model.DrawDescriptor.Orientation.P = debugVector
 		// Handle input
 		debugInput()
 		if console.isFocused() {
@@ -152,6 +138,12 @@ func Main() {
 			int(cam.Position[2]),
 		)
 		app.AddDebugLine([3]uint8{255, 0, 0}, "Debug Vector=%v", debugVector)
+		ray := t.NewRay(cam.Position, cam.Front, 128.0)
+		if ray.IntersectsAABB(model.Bounds) {
+			app.AddDebugLine([3]uint8{255, 0, 255}, "Model Hit=true")
+		} else {
+			app.AddDebugLine([3]uint8{255, 0, 255}, "Model Hit=false")
+		}
 		// Draw
 		app.Draw(cam)
 		// Finish the frame
