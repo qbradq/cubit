@@ -43,6 +43,7 @@ var KeyConfig = map[string][]keySpec{
 	"debug-y-dec": {{glfw.KeyEnd, 0}},
 	"debug-z-inc": {{glfw.KeyInsert, 0}},
 	"debug-z-dec": {{glfw.KeyDelete, 0}},
+	"test-button": {{glfw.KeyF11, 0}},
 }
 
 // Input manages the input and input configuration.

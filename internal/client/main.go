@@ -17,15 +17,16 @@ var mouseSensitivity float32 = 0.15
 var walkSpeed float32 = 5
 
 // Super globals
-var dt float32             // Delta time for the current frame
-var screenWidth int = 1280 // Width of the screen in pixels
-var screenHeight int = 720 // Height of the screen in pixels
-var win *glfw.Window       // GLFW window
-var app *c3d.App           // Graphics application
-var console *consoleWidget // Console widget
-var input *Input           // Input instance
-var world *t.World         // The currently loaded world
-var debugVector mgl32.Vec3 // Debug vector
+var dt float32               // Delta time for the current frame
+var screenWidth int = 1280   // Width of the screen in pixels
+var screenHeight int = 720   // Height of the screen in pixels
+var win *glfw.Window         // GLFW window
+var app *c3d.App             // Graphics application
+var console *consoleWidget   // Console widget
+var input *Input             // Input instance
+var world *t.World           // The currently loaded world
+var debugVector mgl32.Vec3   // Debug vector
+var debugLines *c3d.LineMesh // Debug lines mesh
 
 // UI globals
 var npWindow c3d.NinePatch
@@ -101,6 +102,11 @@ func Main() {
 	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	cam := c3d.NewCamera(mgl32.Vec3{6.5, 2, 7})
 	cam.Yaw = 90.001
+	debugLines = c3d.NewLineMesh()
+	app.AddLineDD(&c3d.LineMeshDrawDescriptor{
+		ID:   1,
+		Mesh: debugLines,
+	})
 	// axis := c3d.NewLineMesh()
 	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
 	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 1, 0}, [4]uint8{0, 255, 0, 255})
@@ -114,6 +120,7 @@ func Main() {
 	// Main loop
 	// debugVector = mgl32.Vec3{1, 1, 1}
 	lastFrame := glfw.GetTime()
+	var wi *t.WorldIntersection
 	for !win.ShouldClose() {
 		// Update state
 		input.startFrame()
@@ -143,6 +150,11 @@ func Main() {
 			app.AddDebugLine([3]uint8{255, 0, 255}, "Model Hit=true")
 		} else {
 			app.AddDebugLine([3]uint8{255, 0, 255}, "Model Hit=false")
+		}
+		if wi != nil {
+			app.AddDebugLine([3]uint8{0, 255, 0}, "World Intersection=%v", wi)
+		} else {
+			app.AddDebugLine([3]uint8{0, 255, 0}, "World Intersection=nil")
 		}
 		// Draw
 		app.Draw(cam)

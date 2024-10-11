@@ -13,7 +13,9 @@ import (
 type LineMesh struct {
 	Orientation t.Orientation // Orientation of the wire frame.
 	d           []byte        // Raw vertex data
+	pd          []byte        // Raw vertex data for points
 	count       int32         // Count of vertexes
+	pCount      int32         // Count of points
 	vao         uint32        // Vertex Array Object ID
 	vbo         uint32        // Vertex Buffer Object ID
 	vboDirty    bool          // If true the VBO needs to be updated on the GPU
@@ -27,6 +29,20 @@ func NewLineMesh() *LineMesh {
 		vbo: invalidVBO,
 	}
 	return ret
+}
+
+// Point adds a single point to the mesh.
+func (m *LineMesh) Point(a mgl32.Vec3, c [4]uint8) {
+	d := m.vbuf[:15]
+	binary.LittleEndian.PutUint32(d[0:4], math.Float32bits(a[0]))
+	binary.LittleEndian.PutUint32(d[4:8], math.Float32bits(a[1]))
+	binary.LittleEndian.PutUint32(d[8:12], math.Float32bits(a[2]))
+	d[12] = c[0]
+	d[13] = c[1]
+	d[14] = c[2]
+	m.pd = append(m.pd, d...)
+	m.pCount++
+	m.vboDirty = true
 }
 
 // Line adds a single line to the mesh.
@@ -59,7 +75,9 @@ func (m *LineMesh) WireFrame(v []mgl32.Vec3, c [4]uint8) {
 // Reset resets the mesh to empty.
 func (m *LineMesh) Reset() {
 	m.d = m.d[:0]
+	m.pd = m.pd[:0]
 	m.count = 0
+	m.pCount = 0
 	m.vboDirty = false
 }
 
@@ -87,11 +105,13 @@ func (m *LineMesh) draw(prg *program) {
 		if len(m.d) > 0 {
 			gl.BindVertexArray(m.vao)
 			gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
-			gl.BufferData(gl.ARRAY_BUFFER, len(m.d), gl.Ptr(m.d),
+			db := append(m.d, m.pd...)
+			gl.BufferData(gl.ARRAY_BUFFER, len(db), gl.Ptr(db),
 				gl.STATIC_DRAW)
 		}
 		m.vboDirty = false
 	}
 	gl.BindVertexArray(m.vao)
 	gl.DrawArrays(gl.LINES, 0, m.count)
+	gl.DrawArrays(gl.POINTS, 0, m.count+m.pCount)
 }

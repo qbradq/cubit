@@ -10,6 +10,7 @@ attribute vec3 aVertexColor;
 varying vec3 color;
 
 void main() {
+	gl_PointSize = 32.0;
 	color = aVertexColor;
 	gl_Position = uProjectionMatrix * uModelViewMatrix *
 		vec4(aVertexPosition, 1.0);
