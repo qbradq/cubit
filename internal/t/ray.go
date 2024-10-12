@@ -144,14 +144,14 @@ func (r *Ray) IntersectWorld(w *World) *WorldIntersection {
 				voxel[0] += int(dx)
 				tMaxX += tDeltaX
 				face = West
-				if tDeltaX < 0 {
+				if dx < 0 {
 					face = East
 				}
 			} else {
 				voxel[2] += int(dz)
 				tMaxZ += tDeltaZ
 				face = North
-				if tDeltaZ < 0 {
+				if dz < 0 {
 					face = South
 				}
 			}
@@ -160,14 +160,14 @@ func (r *Ray) IntersectWorld(w *World) *WorldIntersection {
 				voxel[1] += int(dy)
 				tMaxY += tDeltaY
 				face = Bottom
-				if tDeltaY < 0 {
+				if dy < 0 {
 					face = Top
 				}
 			} else {
 				voxel[2] += int(dz)
 				tMaxZ += tDeltaZ
 				face = North
-				if tDeltaZ < 0 {
+				if dz < 0 {
 					face = South
 				}
 			}

@@ -32,6 +32,7 @@ var KeyConfig = map[string][]keySpec{
 	"console":     {{glfw.KeyGraveAccent, glfw.ModControl}},
 	"backspace":   {{glfw.KeyBackspace, 0}},
 	"delete":      {{glfw.KeyDelete, 0}},
+	"ui-toggle":   {{glfw.KeyTab, 0}},
 	"ui-left":     {{glfw.KeyLeft, 0}},
 	"ui-right":    {{glfw.KeyRight, 0}},
 	"ui-up":       {{glfw.KeyUp, 0}},
@@ -52,6 +53,7 @@ type Input struct {
 	CursorDelta    mgl32.Vec2         // How far the mouse traveled this frame
 	CharsThisFrame []rune             // List of runes generated this frame
 	Mods           glfw.ModifierKey   // Modifier key mask this frame
+	InUIMode       bool               // If true, use ui mode controls
 	keysPressed    [glfw.KeyLast]bool // Array of all key states
 	keysPushed     [glfw.KeyLast]bool // Array of all keys that had their release events this frame
 	buttonsPressed [3]bool            // Array of mouse button states
@@ -64,6 +66,7 @@ type Input struct {
 func NewInput(win *glfw.Window, screenSize mgl32.Vec2) *Input {
 	ret := &Input{
 		lastCursorPos: screenSize.Mul(0.5),
+		InUIMode:      true,
 	}
 	ret.CursorPosition = ret.lastCursorPos
 	win.SetKeyCallback(ret.keyCallback)
@@ -195,41 +198,16 @@ func (n *Input) startFrame() {
 
 // cameraInput handles camera input
 func cameraInput(cam *c3d.Camera) {
-	speed := walkSpeed * dt
-	if input.IsPressed("forward") {
-		dir := cam.Front
-		dir[1] = 0
-		dir = dir.Normalize().Mul(speed)
-		cam.Position = cam.Position.Add(dir)
-	}
-	if input.IsPressed("backward") {
-		dir := cam.Front
-		dir[1] = 0
-		dir = dir.Normalize().Mul(speed)
-		cam.Position = cam.Position.Sub(dir)
-	}
-	if input.IsPressed("left") {
-		cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	}
-	if input.IsPressed("right") {
-		cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
-	}
-	if input.IsPressed("up") {
-		cam.Position = cam.Position.Add(cam.Up.Mul(speed))
-	}
-	if input.IsPressed("down") {
-		cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
-	}
-	if input.IsPressed("turn-left") {
-		cam.Yaw -= dt * 360.0 / 2.0
-	}
-	if input.IsPressed("turn-right") {
-		cam.Yaw += dt * 360.0 / 2.0
-	}
 	if input.WasPressed("console") {
 		console.stepVisibility()
 	}
-	if input.ButtonPressed(2) {
+	if input.WasPressed("ui-toggle") {
+		input.InUIMode = !input.InUIMode
+	}
+	if input.InUIMode {
+		win.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
+		app.CursorVisible = true
+	} else {
 		win.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 		app.CursorVisible = false
 		cam.Yaw += input.CursorDelta[0] * mouseSensitivity
@@ -240,9 +218,37 @@ func cameraInput(cam *c3d.Camera) {
 		if cam.Pitch < -89 {
 			cam.Pitch = -89
 		}
-	} else {
-		win.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
-		app.CursorVisible = true
+		speed := walkSpeed * dt
+		if input.IsPressed("forward") {
+			dir := cam.Front
+			dir[1] = 0
+			dir = dir.Normalize().Mul(speed)
+			cam.Position = cam.Position.Add(dir)
+		}
+		if input.IsPressed("backward") {
+			dir := cam.Front
+			dir[1] = 0
+			dir = dir.Normalize().Mul(speed)
+			cam.Position = cam.Position.Sub(dir)
+		}
+		if input.IsPressed("left") {
+			cam.Position = cam.Position.Sub(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+		}
+		if input.IsPressed("right") {
+			cam.Position = cam.Position.Add(cam.Front.Cross(cam.Up).Normalize().Mul(speed))
+		}
+		if input.IsPressed("up") {
+			cam.Position = cam.Position.Add(cam.Up.Mul(speed))
+		}
+		if input.IsPressed("down") {
+			cam.Position = cam.Position.Sub(cam.Up.Mul(speed))
+		}
+		if input.IsPressed("turn-left") {
+			cam.Yaw -= dt * 360.0 / 2.0
+		}
+		if input.IsPressed("turn-right") {
+			cam.Yaw += dt * 360.0 / 2.0
+		}
 	}
 }
 

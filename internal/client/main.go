@@ -17,16 +17,49 @@ var mouseSensitivity float32 = 0.15
 var walkSpeed float32 = 5
 
 // Super globals
-var dt float32               // Delta time for the current frame
-var screenWidth int = 1280   // Width of the screen in pixels
-var screenHeight int = 720   // Height of the screen in pixels
-var win *glfw.Window         // GLFW window
-var app *c3d.App             // Graphics application
-var console *consoleWidget   // Console widget
-var input *Input             // Input instance
-var world *t.World           // The currently loaded world
-var debugVector mgl32.Vec3   // Debug vector
-var debugLines *c3d.LineMesh // Debug lines mesh
+var dt float32                       // Delta time for the current frame
+var screenWidth int = 1280           // Width of the screen in pixels
+var screenHeight int = 720           // Height of the screen in pixels
+var win *glfw.Window                 // GLFW window
+var app *c3d.App                     // Graphics application
+var console *consoleWidget           // Console widget
+var input *Input                     // Input instance
+var world *t.World                   // The currently loaded world
+var debugVector mgl32.Vec3           // Debug vector
+var debugLines *c3d.LineMesh         // Debug lines mesh
+var cam *c3d.Camera                  // Player camera
+var cubeSelector *c3d.LineMesh       // Cube selection mesh
+var csDD *c3d.LineMeshDrawDescriptor // Cube selector draw descriptor
+
+func init() {
+	c := [4]uint8{0, 255, 0, 255}
+	cubeSelector = c3d.NewLineMesh()
+	cs := cubeSelector
+	cs.Hidden = true
+	d := float32(1.0 / 16.0)
+	w := -d
+	e := 1 + d
+	n := -d
+	s := 1 + d
+	b := -d
+	t := 1 + d
+	cs.Line(mgl32.Vec3{w, b, n}, mgl32.Vec3{e, b, n}, c)
+	cs.Line(mgl32.Vec3{e, b, n}, mgl32.Vec3{e, b, s}, c)
+	cs.Line(mgl32.Vec3{e, b, s}, mgl32.Vec3{w, b, s}, c)
+	cs.Line(mgl32.Vec3{w, b, s}, mgl32.Vec3{w, b, n}, c)
+	cs.Line(mgl32.Vec3{w, t, n}, mgl32.Vec3{e, t, n}, c)
+	cs.Line(mgl32.Vec3{e, t, n}, mgl32.Vec3{e, t, s}, c)
+	cs.Line(mgl32.Vec3{e, t, s}, mgl32.Vec3{w, t, s}, c)
+	cs.Line(mgl32.Vec3{w, t, s}, mgl32.Vec3{w, t, n}, c)
+	cs.Line(mgl32.Vec3{w, b, n}, mgl32.Vec3{w, t, n}, c)
+	cs.Line(mgl32.Vec3{e, b, n}, mgl32.Vec3{e, t, n}, c)
+	cs.Line(mgl32.Vec3{w, b, s}, mgl32.Vec3{w, t, s}, c)
+	cs.Line(mgl32.Vec3{e, b, s}, mgl32.Vec3{e, t, s}, c)
+	csDD = &c3d.LineMeshDrawDescriptor{
+		ID:   1,
+		Mesh: cs,
+	}
+}
 
 // UI globals
 var npWindow c3d.NinePatch
@@ -98,29 +131,18 @@ func Main() {
 	model.DrawDescriptor.Orientation = model.DrawDescriptor.Orientation.Yaw(180)
 	model.StartAnimation("/cubit/animations/characters/walk", "legs")
 	app.AddModelDD(model.DrawDescriptor)
-	// cam := c3d.NewCamera(mgl32.Vec3{2, 2, 5})
-	// cam := c3d.NewCamera(mgl32.Vec3{1, 1, 5})
-	cam := c3d.NewCamera(mgl32.Vec3{6.5, 2, 7})
+	// cam = c3d.NewCamera(mgl32.Vec3{2, 2, 5})
+	// cam = c3d.NewCamera(mgl32.Vec3{1, 1, 5})
+	cam = c3d.NewCamera(mgl32.Vec3{6.5, 2, 7})
 	cam.Yaw = 90.001
 	debugLines = c3d.NewLineMesh()
 	app.AddLineDD(&c3d.LineMeshDrawDescriptor{
 		ID:   1,
 		Mesh: debugLines,
 	})
-	// axis := c3d.NewLineMesh()
-	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{1, 0, 0}, [4]uint8{255, 0, 0, 255})
-	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 1, 0}, [4]uint8{0, 255, 0, 255})
-	// axis.Line(mgl32.Vec3{}, mgl32.Vec3{0, 0, 1}, [4]uint8{0, 0, 255, 255})
-	// ldd := &c3d.LineMeshDrawDescriptor{
-	// 	ID:          1,
-	// 	Orientation: t.O().Translate(mgl32.Vec3{1, 1, 1}),
-	// 	Mesh:        axis,
-	// }
-	// app.AddLineDD(ldd)
 	// Main loop
-	// debugVector = mgl32.Vec3{1, 1, 1}
+	app.AddLineDD(csDD)
 	lastFrame := glfw.GetTime()
-	var wi *t.WorldIntersection
 	for !win.ShouldClose() {
 		// Update state
 		input.startFrame()
@@ -129,14 +151,16 @@ func Main() {
 		currentFrame := glfw.GetTime()
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
-		console.update()
+		chunk.Update()
 		model.Update(dt)
+		console.update()
 		// Handle input
 		debugInput()
 		if console.isFocused() {
 			console.input()
 		} else {
 			cameraInput(cam)
+			editInput()
 		}
 		// TODO REMOVE
 		app.AddDebugLine([3]uint8{255, 255, 0}, "Position: X=%d Y=%d Z=%d",
@@ -144,17 +168,11 @@ func Main() {
 			int(cam.Position[1]),
 			int(cam.Position[2]),
 		)
-		app.AddDebugLine([3]uint8{255, 0, 0}, "Debug Vector=%v", debugVector)
-		ray := t.NewRay(cam.Position, cam.Front, 128.0)
-		if ray.IntersectsAABB(model.Bounds) {
-			app.AddDebugLine([3]uint8{255, 0, 255}, "Model Hit=true")
-		} else {
-			app.AddDebugLine([3]uint8{255, 0, 255}, "Model Hit=false")
-		}
 		if wi != nil {
-			app.AddDebugLine([3]uint8{0, 255, 0}, "World Intersection=%v", wi)
+			app.AddDebugLine([3]uint8{0, 255, 0}, "WI: Pos=%v Face=%d",
+				wi.Position, wi.Face)
 		} else {
-			app.AddDebugLine([3]uint8{0, 255, 0}, "World Intersection=nil")
+			app.AddDebugLine([3]uint8{0, 255, 0}, "WI: nil")
 		}
 		// Draw
 		app.Draw(cam)
@@ -207,4 +225,37 @@ func TestGen(w *t.World) {
 	w.SetCell(t.IVec3{6, 1, 10}, t.CellInvalid)
 	w.SetCell(t.IVec3{6, 2, 10}, t.CellInvalid)
 	w.SetCell(t.IVec3{8, 2, 10}, t.CellForVox(vWindow.Ref, t.North))
+}
+
+var wi *t.WorldIntersection
+
+// editInput is the input handler for editing mode.
+func editInput() {
+	cubeSelector.Hidden = true
+	if input.InUIMode {
+		return
+	}
+	ray := t.NewRay(cam.Position, cam.Front, 8.0)
+	wi = ray.IntersectWorld(world)
+	if wi == nil {
+		return
+	}
+	cubeSelector.Hidden = false
+	csDD.Orientation = t.O().Translate(mgl32.Vec3{
+		float32(wi.Position[0]),
+		float32(wi.Position[1]),
+		float32(wi.Position[2]),
+	})
+	if input.ButtonPushed(2) {
+		world.SetCell(wi.Position, t.CellInvalid)
+	}
+	if input.ButtonPushed(0) {
+		p := t.PositionOffsets[wi.Face].Add(wi.Position)
+		world.SetCell(p,
+			t.CellForCube(
+				mod.GetCubeDef("/cubit/cubes/grass"),
+				t.North,
+			),
+		)
+	}
 }

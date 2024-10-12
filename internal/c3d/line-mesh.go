@@ -11,7 +11,8 @@ import (
 
 // LineMesh provides a simple axis indicator made of full-bright lines.
 type LineMesh struct {
-	Orientation t.Orientation // Orientation of the wire frame.
+	Orientation t.Orientation // Orientation of the wire frame
+	Hidden      bool          // If true, do not draw the line mesh
 	d           []byte        // Raw vertex data
 	pd          []byte        // Raw vertex data for points
 	count       int32         // Count of vertexes
@@ -83,6 +84,9 @@ func (m *LineMesh) Reset() {
 
 // draw draws the line mesh.
 func (m *LineMesh) draw(prg *program) {
+	if m.Hidden {
+		return
+	}
 	if m.vao == invalidVAO {
 		gl.GenVertexArrays(1, &m.vao)
 	}
