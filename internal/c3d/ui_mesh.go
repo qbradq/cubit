@@ -14,39 +14,32 @@ const vsTileDims int = 4
 // UIMesh is a drawable 2D orthographic mode object that can include ui tiles
 // and text.
 type UIMesh struct {
-	Text     *TextMesh  // Text layer
-	Position mgl32.Vec2 // Position of the element in virtual screen units
-	Layer    uint16     // Layer index, the higher the value the higher priority
-	d        []byte     // Vertex buffer data
-	count    int32      // Vertex count
-	vao      uint32     // Vertex buffer array ID
-	vbo      uint32     // Vertex buffer object ID
-	vboDirty bool       // If true, the VBO needs to be updated
-	vbuf     [6]byte    // Vertex buffer
+	Text     *TextMesh                 // Text layer
+	Cubes    []*CubeMeshDrawDescriptor // List of all cube meshes to draw
+	Position mgl32.Vec2                // Position of the element in virtual screen units
+	Layer    uint16                    // Layer index, the higher the value the higher priority
+	d        []byte                    // Vertex buffer data
+	count    int32                     // Vertex count
+	vao      uint32                    // Vertex buffer array ID
+	vbo      uint32                    // Vertex buffer object ID
+	vboDirty bool                      // If true, the VBO needs to be updated
+	vbuf     [6]byte                   // Vertex buffer
 }
 
 // newUIMesh creates a new UIMesh ready for use.
-func newUIMesh(f *fontManager, uiPrg, textPrg *program) *UIMesh {
+func newUIMesh(f *fontManager, textPrg *program) *UIMesh {
 	// Init
 	ret := &UIMesh{
+		vao:  invalidVAO,
+		vbo:  invalidVBO,
 		Text: newTextMesh(f, textPrg),
 	}
-	gl.GenVertexArrays(1, &ret.vao)
-	gl.GenBuffers(1, &ret.vbo)
-	// Configure buffer attributes
-	var stride int32 = 2*2 + 2*1
-	var offset int = 0
-	gl.BindVertexArray(ret.vao)
-	gl.BindBuffer(gl.ARRAY_BUFFER, ret.vbo)
-	gl.VertexAttribPointerWithOffset(uint32(uiPrg.attr("aVertexPosition")),
-		2, gl.SHORT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(uiPrg.attr("aVertexPosition")))
-	offset += 2 * 2
-	gl.VertexAttribPointerWithOffset(uint32(uiPrg.attr("aVertexUV")),
-		2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(uiPrg.attr("aVertexUV")))
-	offset += 2 * 1
 	return ret
+}
+
+// AddCube adds a cube to the list of cube meshes.
+func (e *UIMesh) AddCube(m *CubeMeshDrawDescriptor) {
+	e.Cubes = append(e.Cubes, m)
 }
 
 // Reset resets the text object to blank. Internal memory buffers are retained
@@ -127,7 +120,24 @@ func (e *UIMesh) NinePatch(x, y, w, h int, n NinePatch) {
 	e.Scaled(c[0][0], c[0][1], c[1][0], c[1][1], n[4])
 }
 
-func (e *UIMesh) draw() {
+func (e *UIMesh) draw(prg *program) {
+	if e.vao == invalidVAO || e.vbo == invalidVBO {
+		gl.GenVertexArrays(1, &e.vao)
+		gl.GenBuffers(1, &e.vbo)
+		// Configure buffer attributes
+		var stride int32 = 2*2 + 2*1
+		var offset int = 0
+		gl.BindVertexArray(e.vao)
+		gl.BindBuffer(gl.ARRAY_BUFFER, e.vbo)
+		gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexPosition")),
+			2, gl.SHORT, false, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(prg.attr("aVertexPosition")))
+		offset += 2 * 2
+		gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexUV")),
+			2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
+		offset += 2 * 1
+	}
 	if e.vboDirty {
 		if len(e.d) > 0 {
 			gl.BindVertexArray(e.vao)

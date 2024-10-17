@@ -22,8 +22,14 @@ const VirtualScreenWidth int = 320
 // VirtualScreenHeight is the width of the virtual 2D screen in pixels.
 const VirtualScreenHeight int = 180
 
+// VirtualScreenGlyphSize is the dimensions of a glyph.
+const VirtualScreenGlyphSize int = 4
+
 // VirtualScreenGlyphsWide is the width of the screen in glyphs.
-const VirtualScreenGlyphsWide int = 80
+const VirtualScreenGlyphsWide int = VirtualScreenWidth / VirtualScreenGlyphSize
+
+// VirtualScreenGlyphsHigh is the width of the screen in glyphs.
+const VirtualScreenGlyphsHigh int = VirtualScreenHeight / VirtualScreenGlyphSize
 
 // vsGlyphWidth is the width of one glyph in virtual screen units, minus boarder
 // width.

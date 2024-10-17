@@ -1,12 +1,15 @@
 package client
 
-import "github.com/qbradq/cubit/internal/c3d"
+import (
+	"github.com/qbradq/cubit/internal/c3d"
+)
 
 const (
-	layerCursor    uint16 = 0xFFFF
-	layerConsole   uint16 = 0xFFFE
-	layerCrosshair uint16 = 0xFFFD
-	layerHighest   uint16 = 0xFFFC
+	layerToolBelt  uint16 = 0x0100
+	layerCursor    uint16 = 0x7FFF
+	layerConsole   uint16 = 0x7FFE
+	layerCrosshair uint16 = 0x7FFD
+	layerHighest   uint16 = 0x7FFC
 )
 
 // baseWidget is a mixin struct that provides common functionality to all

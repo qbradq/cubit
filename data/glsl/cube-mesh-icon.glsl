@@ -1,7 +1,7 @@
 [VERTEX]
 #version 100
 
-uniform mat4 uModelViewMatrix;
+uniform mat4 uModelMatrix;
 uniform mat4 uProjectionMatrix;
 
 attribute vec3 aVertexPosition;
@@ -17,8 +17,8 @@ void main() {
     uv = aVertexUV;
     atlasXY = aAtlasXY;
     lightLevel = aVertexLightLevel;
-	gl_Position = uProjectionMatrix * uModelViewMatrix *
-        vec4(aVertexPosition, 1.0);
+	gl_Position = uProjectionMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
+    gl_Position[2] = aVertexPosition[2];
 }
 
 [FRAGMENT]

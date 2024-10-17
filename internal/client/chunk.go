@@ -61,9 +61,9 @@ func NewChunk(p t.IVec3) *Chunk {
 	return ret
 }
 
-// Update does periodic updates on the chunk for client-side things like chunk
+// update does periodic updates on the chunk for client-side things like chunk
 // compilation.
-func (c *Chunk) Update() {
+func (c *Chunk) update() {
 	if c.lcr < c.c.Revision {
 		c.cdd.CubeDD.Mesh.Reset()
 		c3d.BuildVoxelMesh[t.Cell](c.c, c.cdd.CubeDD.Mesh)

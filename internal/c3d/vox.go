@@ -2,12 +2,6 @@ package c3d
 
 import "github.com/qbradq/cubit/internal/t"
 
-// verter implementations expose a function for adding vertexes to a mesh.
-type verter[T any] interface {
-	// vert adds a single vertex to the mesh.
-	vert(x, y, z, u, v uint8, i int, c T, f t.Facing)
-}
-
 // VoxelSource is the interface that must be implemented by voxel data providers
 // to the BuildVoxelMesh function.
 type VoxelSource[T any] interface {
@@ -169,12 +163,12 @@ func (s *voxFaceSlice[T]) greedyMesh() {
 }
 
 // mesh outputs the faces of the slice to the mesh.
-func (s *voxFaceSlice[T]) mesh(d verter[T]) {
+func (s *voxFaceSlice[T]) mesh(d Mesh[T]) {
 	for _, f := range s.faces {
 		if f == nil {
 			continue
 		}
-		addFace([3]uint8{
+		AddFace([3]uint8{
 			uint8(f.x),
 			uint8(f.y),
 			uint8(f.z),
@@ -189,7 +183,7 @@ func (s *voxFaceSlice[T]) mesh(d verter[T]) {
 // BuildVoxelMesh builds a VoxelMesh object from the passed voxel source and
 // constructs faces in the destination mesh. Note that the destination mesh is
 // not reset before faces are added.
-func BuildVoxelMesh[T comparable](v VoxelSource[T], d verter[T]) {
+func BuildVoxelMesh[T comparable](v VoxelSource[T], d Mesh[T]) {
 	width, height, depth := v.Dimensions()
 	// Determine if a face is required
 	face := func(pos [3]int, f t.Facing) bool {
@@ -262,67 +256,5 @@ func BuildVoxelMesh[T comparable](v VoxelSource[T], d verter[T]) {
 	for _, s := range slices {
 		s.greedyMesh()
 		s.mesh(d)
-	}
-}
-
-func addFace[T any](p, d [3]uint8, f t.Facing, c T, m verter[T]) {
-	d[0] -= 1
-	d[1] -= 1
-	d[2] -= 1
-	switch f {
-	case t.North:
-		u := d[0] + 1
-		v := d[1] + 1
-		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2], 0, 0, 0, c, f) // TL
-		m.vert(p[0], p[1]+d[1]+1, p[2], u, 0, 1, c, f)        // TR
-		m.vert(p[0]+d[0]+1, p[1], p[2], 0, v, 2, c, f)        // BL
-		m.vert(p[0]+d[0]+1, p[1], p[2], 0, v, 2, c, f)        // BL
-		m.vert(p[0], p[1]+d[1]+1, p[2], u, 0, 1, c, f)        // TR
-		m.vert(p[0], p[1], p[2], u, v, 3, c, f)               // BR
-	case t.South:
-		u := d[0] + 1
-		v := d[1] + 1
-		m.vert(p[0], p[1]+d[1]+1, p[2]+1, 0, 0, 0, c, f)        // TL
-		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2]+1, u, 0, 1, c, f) // TR
-		m.vert(p[0], p[1], p[2]+1, 0, v, 2, c, f)               // BL
-		m.vert(p[0], p[1], p[2]+1, 0, v, 2, c, f)               // BL
-		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2]+1, u, 0, 1, c, f) // TR
-		m.vert(p[0]+d[0]+1, p[1], p[2]+1, u, v, 3, c, f)        // BR
-	case t.East:
-		u := d[2] + 1
-		v := d[1] + 1
-		m.vert(p[0]+1, p[1]+d[1]+1, p[2]+d[2]+1, 0, 0, 0, c, f) // TL
-		m.vert(p[0]+1, p[1]+d[1]+1, p[2], u, 0, 1, c, f)        // TR
-		m.vert(p[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f)        // BL
-		m.vert(p[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f)        // BL
-		m.vert(p[0]+1, p[1]+d[1]+1, p[2], u, 0, 1, c, f)        // TR
-		m.vert(p[0]+1, p[1], p[2], u, v, 3, c, f)               // BR
-	case t.West:
-		u := d[2] + 1
-		v := d[1] + 1
-		m.vert(p[0], p[1]+d[1]+1, p[2], 0, 0, 0, c, f)        // TL
-		m.vert(p[0], p[1]+d[1]+1, p[2]+d[2]+1, u, 0, 1, c, f) // TR
-		m.vert(p[0], p[1], p[2], 0, v, 2, c, f)               // BL
-		m.vert(p[0], p[1], p[2], 0, v, 2, c, f)               // BL
-		m.vert(p[0], p[1]+d[1]+1, p[2]+d[2]+1, u, 0, 1, c, f) // TR
-		m.vert(p[0], p[1], p[2]+d[2]+1, u, v, 3, c, f)        // BR
-	case t.Top:
-		u := d[0] + 1
-		v := d[2] + 1
-		m.vert(p[0], p[1]+1, p[2], 0, 0, 0, c, f)               // TL
-		m.vert(p[0]+d[0]+1, p[1]+1, p[2], u, 0, 1, c, f)        // TR
-		m.vert(p[0], p[1]+1, p[2]+d[2]+1, 0, v, 2, c, f)        // BL
-		m.vert(p[0], p[1]+1, p[2]+d[2]+1, 0, v, 2, c, f)        // BL
-		m.vert(p[0]+d[0]+1, p[1]+1, p[2], u, 0, 1, c, f)        // TR
-		m.vert(p[0]+d[0]+1, p[1]+1, p[2]+d[2]+1, u, v, 3, c, f) // BR
-	case t.Bottom:
-		u := d[0] + 1
-		v := d[2] + 1
-		m.vert(p[0]+d[0]+1, p[1], p[2], 0, 0, 0, c, f)        // TL
-		m.vert(p[0], p[1], p[2], u, 0, 1, c, f)               // TR
-		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f) // BL
-		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f) // BL
-		m.vert(p[0], p[1], p[2], u, 0, 1, c, f)               // TR
-		m.vert(p[0], p[1], p[2]+d[2]+1, u, v, 3, c, f)        // BR
 	}
 }

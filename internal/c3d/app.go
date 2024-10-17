@@ -29,6 +29,7 @@ type App struct {
 	pCubeMesh         *program                  // Face atlas texturing
 	pText             *program                  // Text rendering
 	pUI               *program                  // UI tile rendering
+	pCubeMeshIcon     *program                  // Cube mesh icon rendering
 	faces             *FaceAtlas                // Face atlas to use for cube mesh rendering
 	tiles             *FaceAtlas                // Face atlas to use for ui tile rendering
 	fm                *fontManager              // Font manager for the application
@@ -81,6 +82,11 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 	}
 	ret.tiles.upload(ret.pUI)
 	ret.tiles.freeMemory()
+	// cube-mesh-icon.glsl
+	ret.pCubeMeshIcon, err = loadProgram("cube-mesh-icon")
+	if err != nil {
+		return nil, err
+	}
 	// Internal meshes
 	ret.genAxis()
 	ret.chunkBounds = AABB{
@@ -95,13 +101,13 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 func (a *App) genAxis() {
 	a.axis = NewLineMesh()
 	c := [4]uint8{255, 255, 255, 255}
-	for i := float32(0); i <= 10; i++ {
-		a.axis.Line(mgl32.Vec3{i, 0, 0}, mgl32.Vec3{i, 10, 0}, c)
-		a.axis.Line(mgl32.Vec3{i, 0, 0}, mgl32.Vec3{i, 0, 10}, c)
-		a.axis.Line(mgl32.Vec3{0, i, 0}, mgl32.Vec3{10, i, 0}, c)
-		a.axis.Line(mgl32.Vec3{0, i, 0}, mgl32.Vec3{0, i, 10}, c)
-		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{0, 10, i}, c)
-		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{10, 0, i}, c)
+	for i := float32(0); i <= 16; i++ {
+		a.axis.Line(mgl32.Vec3{i, 0, 0}, mgl32.Vec3{i, 16, 0}, c)
+		a.axis.Line(mgl32.Vec3{i, 0, 0}, mgl32.Vec3{i, 0, 16}, c)
+		a.axis.Line(mgl32.Vec3{0, i, 0}, mgl32.Vec3{16, i, 0}, c)
+		a.axis.Line(mgl32.Vec3{0, i, 0}, mgl32.Vec3{0, i, 16}, c)
+		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{0, 16, i}, c)
+		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{16, 0, i}, c)
 	}
 }
 
@@ -159,7 +165,7 @@ func (a *App) SetCrosshair(f t.FaceIndex, l uint16) {
 
 // NewUIMesh creates and returns a new UIMesh.
 func (a *App) NewUIMesh() *UIMesh {
-	return newUIMesh(a.fm, a.pUI, a.pText)
+	return newUIMesh(a.fm, a.pText)
 }
 
 // AddUIMesh adds the UI mesh to the list to render.
@@ -332,20 +338,20 @@ func (a *App) Draw(c *Camera) {
 	for _, m := range a.uiMeshes {
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
 			float32(m.Layer)/0xFFFF)
-		m.draw()
+		m.draw(a.pUI)
 	}
 	// Draw common screen components
 	if a.CrosshairVisible && a.crosshair != nil {
 		m := a.crosshair
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
 			float32(m.Layer)/0xFFFF)
-		m.draw()
+		m.draw(a.pUI)
 	}
 	if a.CursorVisible && a.cursor != nil {
 		m := a.cursor
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
 			float32(m.Layer)/0xFFFF)
-		m.draw()
+		m.draw(a.pUI)
 	}
 	// Draw UI elements, text layer
 	a.pText.use()
@@ -355,7 +361,7 @@ func (a *App) Draw(c *Camera) {
 	gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false, &pMat[0])
 	a.fm.bind(a.pText)
 	for _, m := range a.uiMeshes {
-		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
+		gl.Uniform3f(a.pText.uni("uPosition"), m.Position[0], -m.Position[1],
 			float32(m.Layer)/0xFFFF)
 		m.Text.draw()
 	}
@@ -363,8 +369,28 @@ func (a *App) Draw(c *Camera) {
 	if a.DebugTextVisible && a.debugText != nil {
 		a.updateDebugText()
 		m := a.debugText
-		gl.Uniform3f(a.pUI.uni("uPosition"), 0, 0, 1.0)
+		gl.Uniform3f(a.pText.uni("uPosition"), 0, 0, 1.0)
 		m.draw()
 	}
 	a.debugLines = a.debugLines[:0]
+	// Draw UI elements, cube mesh layer
+	a.pCubeMeshIcon.use()
+	gl.UniformMatrix4fv(a.pCubeMeshIcon.uni("uProjectionMatrix"), 1, false,
+		&pMat[0])
+	a.faces.bind(a.pCubeMeshIcon)
+	for _, m := range a.uiMeshes {
+		for _, d := range m.Cubes {
+			if d.Mesh == nil {
+				continue
+			}
+			mt := mgl32.Translate3D(
+				d.Position[0],
+				-d.Position[1],
+				-d.Position[2],
+			)
+			gl.UniformMatrix4fv(a.pCubeMeshIcon.uni("uModelMatrix"), 1, false,
+				&mt[0])
+			d.Mesh.draw(a.pCubeMeshIcon)
+		}
+	}
 }

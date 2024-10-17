@@ -23,6 +23,7 @@ var screenHeight int = 720           // Height of the screen in pixels
 var win *glfw.Window                 // GLFW window
 var app *c3d.App                     // Graphics application
 var console *consoleWidget           // Console widget
+var toolBelt *toolBeltWidget         // Tool belt widget
 var input *Input                     // Input instance
 var world *t.World                   // The currently loaded world
 var debugVector mgl32.Vec3           // Debug vector
@@ -63,6 +64,7 @@ func init() {
 
 // UI globals
 var npWindow c3d.NinePatch
+var npHighlight c3d.NinePatch
 
 func init() {
 	runtime.LockOSThread()
@@ -109,11 +111,26 @@ func Main() {
 		mod.GetUITile("/cubit/021"),
 		mod.GetUITile("/cubit/022"),
 	}
+	npHighlight = c3d.NinePatch{
+		mod.GetUITile("/cubit/030"),
+		mod.GetUITile("/cubit/031"),
+		mod.GetUITile("/cubit/032"),
+		mod.GetUITile("/cubit/040"),
+		mod.GetUITile("/cubit/041"),
+		mod.GetUITile("/cubit/042"),
+		mod.GetUITile("/cubit/050"),
+		mod.GetUITile("/cubit/051"),
+		mod.GetUITile("/cubit/052"),
+	}
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
 	console = newConsoleWidget(app)
 	console.printf([3]uint8{0, 255, 255},
 		"%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
 	console.add(app)
+	toolBelt = newToolBeltWidget(app)
+	toolBelt.setItem(t.CellForCube(mod.GetCubeDef("/cubit/cubes/grass"),
+		t.North), 0)
+	toolBelt.add(app)
 	app.SetCrosshair(mod.GetUITile("/cubit/003"), layerCrosshair)
 	app.SetCursor(mod.GetUITile("/cubit/004"), layerCursor)
 	app.CrosshairVisible = true
@@ -124,7 +141,7 @@ func Main() {
 	world = t.NewWorld()
 	TestGen(world)
 	chunk := NewChunk(t.IVec3{0, 0, 0})
-	chunk.Update()
+	chunk.update()
 	app.AddChunkDD(chunk.cdd)
 	model := mod.NewModel("/cubit/models/characters/brad")
 	model.DrawDescriptor.Orientation.P = mgl32.Vec3{6.5, 1.75, 10.5}
@@ -151,15 +168,17 @@ func Main() {
 		currentFrame := glfw.GetTime()
 		dt = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
-		chunk.Update()
+		chunk.update()
 		model.Update(dt)
 		console.update()
+		toolBelt.update()
 		// Handle input
 		debugInput()
 		if console.isFocused() {
 			console.input()
 		} else {
 			cameraInput(cam)
+			toolBelt.input()
 			editInput()
 		}
 		// TODO REMOVE
@@ -246,9 +265,6 @@ func editInput() {
 		float32(wi.Position[1]),
 		float32(wi.Position[2]),
 	})
-	if input.ButtonPushed(2) {
-		world.SetCell(wi.Position, t.CellInvalid)
-	}
 	if input.ButtonPushed(0) {
 		p := t.PositionOffsets[wi.Face].Add(wi.Position)
 		world.SetCell(p,
@@ -257,5 +273,12 @@ func editInput() {
 				t.North,
 			),
 		)
+	}
+	if input.ButtonPushed(1) {
+		c := world.GetCell(wi.Position)
+		toolBelt.setSelectedItem(c)
+	}
+	if input.ButtonPushed(2) {
+		world.SetCell(wi.Position, t.CellInvalid)
 	}
 }
