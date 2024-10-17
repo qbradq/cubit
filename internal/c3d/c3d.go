@@ -21,9 +21,10 @@ type ColoredString struct {
 
 // CubeMeshDrawDescriptor describes how and where to draw a cube mesh.
 type CubeMeshDrawDescriptor struct {
-	ID       uint32     // ID
-	Mesh     *CubeMesh  // The mesh to draw
-	Position mgl32.Vec3 // Position of the bottom-north-west corner of the mesh
+	ID          uint32        // ID
+	Mesh        *CubeMesh     // The mesh to draw
+	Position    mgl32.Vec3    // Position of the bottom-north-west corner of the mesh
+	Orientation t.Orientation // Describes the origin and rotation of the mesh
 }
 
 // VoxelMeshDrawDescriptor describes how and where to draw a cube mesh.

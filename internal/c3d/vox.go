@@ -176,7 +176,7 @@ func (s *voxFaceSlice[T]) mesh(d Mesh[T]) {
 			uint8(f.w),
 			uint8(f.h),
 			uint8(f.d),
-		}, s.f, f.v, d)
+		}, 1, s.f, f.v, d)
 	}
 }
 

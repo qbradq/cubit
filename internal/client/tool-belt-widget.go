@@ -24,27 +24,39 @@ func newToolBeltWidget(app *c3d.App) *toolBeltWidget {
 		dirty:      true,
 	}
 	ret.UIMesh.Layer = layerToolBelt
+	x := (t.VirtualScreenGlyphsWide - 40) / 2 * t.VirtualScreenGlyphSize
+	y := (t.VirtualScreenGlyphsHigh - 4) * t.VirtualScreenGlyphSize
+	x += t.VirtualScreenGlyphSize
+	y += t.VirtualScreenGlyphSize
+	ro := t.O().Translate(mgl32.Vec3{4, 4, 4}).Yaw(mgl32.DegToRad(225)).Pitch(
+		mgl32.DegToRad(30))
 	for i := range ret.items {
-		x := (t.VirtualScreenGlyphsWide-40)/2 + 4*t.VirtualScreenGlyphSize
-		y := (t.VirtualScreenGlyphsHigh - 4) * t.VirtualScreenGlyphSize
 		ret.items[i] = t.CellInvalid
 		ret.cds[i] = &c3d.CubeMeshDrawDescriptor{
 			ID:   uint32(i),
 			Mesh: c3d.NewCubeMesh(mod.CubeDefs),
 			Position: mgl32.Vec3{
-				float32(x),
-				float32(y),
-				float32(ret.Layer) / 0xFFFF,
+				float32(x + t.VirtualScreenGlyphSize),
+				float32(y + t.VirtualScreenGlyphSize),
+				0,
 			},
+			Orientation: ro,
 		}
 		ret.UIMesh.Cubes = append(ret.UIMesh.Cubes, ret.cds[i])
+		x += t.VirtualScreenGlyphSize * 4
 	}
 	return ret
 }
 
+// getSelectedCell returns the cell describing the item in the currently
+// selected slot.
+func (w *toolBeltWidget) getSelectedCell() t.Cell {
+	return w.items[w.selected]
+}
+
 // updateMesh builds the UI mesh.
 func (w *toolBeltWidget) updateMesh() {
-	w.UIMesh.Reset()
+	w.Reset(true, true)
 	x := (t.VirtualScreenGlyphsWide - 40) / 2
 	y := t.VirtualScreenGlyphsHigh - 4
 	for i := range w.items {
@@ -78,7 +90,7 @@ func (w *toolBeltWidget) updateCube(i int) {
 	c3d.AddCube(
 		[3]uint8{0, 0, 0},
 		[3]uint8{d, d, d},
-		f,
+		d, f,
 		mod.CubeDefs[cube],
 		w.cds[i].Mesh,
 	)

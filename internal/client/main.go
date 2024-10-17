@@ -18,6 +18,7 @@ var walkSpeed float32 = 5
 
 // Super globals
 var dt float32                       // Delta time for the current frame
+var runTime float32                  // Total runtime of the application
 var screenWidth int = 1280           // Width of the screen in pixels
 var screenHeight int = 720           // Height of the screen in pixels
 var win *glfw.Window                 // GLFW window
@@ -128,7 +129,7 @@ func Main() {
 		"%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
 	console.add(app)
 	toolBelt = newToolBeltWidget(app)
-	toolBelt.setItem(t.CellForCube(mod.GetCubeDef("/cubit/cubes/grass"),
+	toolBelt.setItem(t.CellForCube(mod.GetCubeRef("/cubit/cubes/grass"),
 		t.North), 0)
 	toolBelt.add(app)
 	app.SetCrosshair(mod.GetUITile("/cubit/003"), layerCrosshair)
@@ -143,13 +144,13 @@ func Main() {
 	chunk := NewChunk(t.IVec3{0, 0, 0})
 	chunk.update()
 	app.AddChunkDD(chunk.cdd)
+	c3d.AddCube([3]uint8{0, 4, 0}, [3]uint8{1, 1, 1}, 1, t.North,
+		mod.GetCubeDef("/cubit/cubes/grass"), chunk.cdd.CubeDD.Mesh)
 	model := mod.NewModel("/cubit/models/characters/brad")
 	model.DrawDescriptor.Orientation.P = mgl32.Vec3{6.5, 1.75, 10.5}
 	model.DrawDescriptor.Orientation = model.DrawDescriptor.Orientation.Yaw(180)
 	model.StartAnimation("/cubit/animations/characters/walk", "legs")
 	app.AddModelDD(model.DrawDescriptor)
-	// cam = c3d.NewCamera(mgl32.Vec3{2, 2, 5})
-	// cam = c3d.NewCamera(mgl32.Vec3{1, 1, 5})
 	cam = c3d.NewCamera(mgl32.Vec3{6.5, 2, 7})
 	cam.Yaw = 90.001
 	debugLines = c3d.NewLineMesh()
@@ -159,15 +160,15 @@ func Main() {
 	})
 	// Main loop
 	app.AddLineDD(csDD)
-	lastFrame := glfw.GetTime()
+	lastRuntime := glfw.GetTime()
 	for !win.ShouldClose() {
 		// Update state
 		input.startFrame()
 		glfw.PollEvents()
 		input.PollEvents()
-		currentFrame := glfw.GetTime()
-		dt = float32(currentFrame - lastFrame)
-		lastFrame = currentFrame
+		runTime = float32(glfw.GetTime())
+		dt = float32(float64(runTime) - lastRuntime)
+		lastRuntime = float64(runTime)
 		chunk.update()
 		model.Update(dt)
 		console.update()
@@ -219,8 +220,8 @@ func glInit() (*c3d.App, error) {
 
 // TODO DEBUG REMOVE
 func TestGen(w *t.World) {
-	rStone := mod.GetCubeDef("/cubit/cubes/stone")
-	rGrass := mod.GetCubeDef("/cubit/cubes/grass")
+	rStone := mod.GetCubeRef("/cubit/cubes/stone")
+	rGrass := mod.GetCubeRef("/cubit/cubes/grass")
 	vWindow := mod.GetVoxByPath("/cubit/vox/window0")
 	rect := func(min, max t.IVec3, r t.Cell) {
 		for iy := min[1]; iy <= max[1]; iy++ {
@@ -267,12 +268,10 @@ func editInput() {
 	})
 	if input.ButtonPushed(0) {
 		p := t.PositionOffsets[wi.Face].Add(wi.Position)
-		world.SetCell(p,
-			t.CellForCube(
-				mod.GetCubeDef("/cubit/cubes/grass"),
-				t.North,
-			),
-		)
+		c := toolBelt.getSelectedCell()
+		if c != t.CellInvalid {
+			world.SetCell(p, c)
+		}
 	}
 	if input.ButtonPushed(1) {
 		c := world.GetCell(wi.Position)

@@ -87,7 +87,7 @@ func (w *consoleWidget) stepVisibility() {
 // drawText draws all text into the widget.
 func (w *consoleWidget) drawText() {
 	// Cleanup
-	w.Text.Reset()
+	w.Reset(false, true)
 	w.textDirty = false
 	// Draw log lines
 	li := w.lp
@@ -101,7 +101,7 @@ func (w *consoleWidget) drawText() {
 			break
 		}
 		line := w.lines[li]
-		w.Text.Print(p[0], p[1], line.Color, line.String)
+		w.Print(p[0], p[1], line.Color, line.String)
 		li--
 		if li < 0 {
 			li = conLines - 1
@@ -123,10 +123,10 @@ func (w *consoleWidget) drawText() {
 		prompt = prompt[:conWidth]
 	}
 	p[1] = t.CellDimsVS * (conHeight + 3)
-	w.Text.Print(p[0], p[1], [3]uint8{255, 255, 255}, prompt)
+	w.Print(p[0], p[1], [3]uint8{255, 255, 255}, prompt)
 	// Draw caret
 	p[0] = t.CellDimsVS * ((c - l) + 1)
-	w.Text.Print(p[0], p[1], [3]uint8{255, 255, 255}, "_")
+	w.Print(p[0], p[1], [3]uint8{255, 255, 255}, "_")
 }
 
 // update implements the widget interface.

@@ -2,6 +2,7 @@ package c3d
 
 import (
 	"fmt"
+	"sort"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/go-gl/mathgl/mgl32"
@@ -74,7 +75,7 @@ func NewApp(faces *FaceAtlas, tiles *FaceAtlas) (*App, error) {
 		return nil, err
 	}
 	ret.fm = newFontManager(ret.pText)
-	ret.debugText = newTextMesh(ret.fm, ret.pText)
+	ret.debugText = ret.NewTextMesh()
 	// ui.glsl
 	ret.pUI, err = loadProgram("ui")
 	if err != nil {
@@ -109,6 +110,16 @@ func (a *App) genAxis() {
 		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{0, 16, i}, c)
 		a.axis.Line(mgl32.Vec3{0, 0, i}, mgl32.Vec3{16, 0, i}, c)
 	}
+}
+
+// NewTextMesh returns a new text mesh ready for use.
+func (a *App) NewTextMesh() *TextMesh {
+	return newTextMesh(a.fm)
+}
+
+// NewUIMesh returns a new UI mesh ready for use.
+func (a *App) NewUIMesh() *UIMesh {
+	return newUIMesh(a)
 }
 
 // Delete removes all memory and GPU resources managed by the app.
@@ -161,11 +172,6 @@ func (a *App) SetCrosshair(f t.FaceIndex, l uint16) {
 	a.crosshair.Position[1] =
 		float32(t.VirtualScreenHeight-t.VSGlyphWidth*2) / 2
 	a.crosshair.Layer = l
-}
-
-// NewUIMesh creates and returns a new UIMesh.
-func (a *App) NewUIMesh() *UIMesh {
-	return newUIMesh(a.fm, a.pText)
 }
 
 // AddUIMesh adds the UI mesh to the list to render.
@@ -328,19 +334,67 @@ func (a *App) Draw(c *Camera) {
 			d.Root.draw(a.pModelMesh, d.Orientation)
 		}
 	}
-	// Draw UI elements, tiles layer
-	gl.Clear(gl.DEPTH_BUFFER_BIT)
-	a.pUI.use()
-	pMat = mgl32.Ortho2D(0, float32(t.VirtualScreenWidth), 0,
-		float32(t.VirtualScreenHeight))
-	gl.UniformMatrix4fv(a.pUI.uni("uProjectionMatrix"), 1, false, &pMat[0])
-	a.tiles.bind(a.pUI)
+	// Draw UI elements
+	sort.Slice(a.uiMeshes, func(i, j int) bool {
+		return a.uiMeshes[i].Layer < a.uiMeshes[j].Layer
+	})
+	gl.Disable(gl.DEPTH_TEST)
+	pMat = mgl32.Ortho(0, float32(t.VirtualScreenWidth), 0,
+		float32(t.VirtualScreenHeight), -1000, 1000)
+	if a.fm.imgDirty {
+		a.fm.updateAtlasTexture()
+	}
 	for _, m := range a.uiMeshes {
-		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
-			float32(m.Layer)/0xFFFF)
-		m.draw(a.pUI)
+		// UI tiles
+		if m.count > 0 {
+			a.pUI.use()
+			gl.UniformMatrix4fv(a.pUI.uni("uProjectionMatrix"), 1, false, &pMat[0])
+			a.tiles.bind(a.pUI)
+			gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
+				float32(m.Layer)/0x7FF)
+			m.draw(a.pUI)
+		}
+		// Text layer
+		if m.text != nil {
+			a.pText.use()
+			gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false,
+				&pMat[0])
+			a.fm.bind(a.pText)
+			gl.Uniform3f(a.pText.uni("uPosition"), m.Position[0],
+				-m.Position[1], float32(m.Layer)/0x7FF)
+			m.text.draw(a.pText)
+		}
+		// Cubes layer
+		if len(m.Cubes) > 0 {
+			a.pCubeMeshIcon.use()
+			gl.UniformMatrix4fv(a.pCubeMeshIcon.uni("uProjectionMatrix"), 1,
+				false, &pMat[0])
+			a.faces.bind(a.pCubeMeshIcon)
+		}
+		for _, c := range m.Cubes {
+			if c.Mesh == nil {
+				continue
+			}
+			gl.Uniform3f(a.pCubeMeshIcon.uni("uPosition"),
+				c.Position[0],
+				float32(t.VirtualScreenHeight)-c.Position[1],
+				c.Position[2],
+			)
+			gl.Uniform3f(a.pCubeMeshIcon.uni("uOrigin"),
+				c.Orientation.P[0],
+				c.Orientation.P[1],
+				c.Orientation.P[2],
+			)
+			mm := c.Orientation.RotationMatrix()
+			gl.UniformMatrix4fv(a.pCubeMeshIcon.uni("uModelMatrix"), 1, false,
+				&mm[0])
+			c.Mesh.draw(a.pCubeMeshIcon)
+		}
 	}
 	// Draw common screen components
+	a.pUI.use()
+	gl.UniformMatrix4fv(a.pUI.uni("uProjectionMatrix"), 1, false, &pMat[0])
+	a.tiles.bind(a.pUI)
 	if a.CrosshairVisible && a.crosshair != nil {
 		m := a.crosshair
 		gl.Uniform3f(a.pUI.uni("uPosition"), m.Position[0], -m.Position[1],
@@ -353,44 +407,15 @@ func (a *App) Draw(c *Camera) {
 			float32(m.Layer)/0xFFFF)
 		m.draw(a.pUI)
 	}
-	// Draw UI elements, text layer
-	a.pText.use()
-	if a.fm.imgDirty {
-		a.fm.updateAtlasTexture()
-	}
-	gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false, &pMat[0])
-	a.fm.bind(a.pText)
-	for _, m := range a.uiMeshes {
-		gl.Uniform3f(a.pText.uni("uPosition"), m.Position[0], -m.Position[1],
-			float32(m.Layer)/0xFFFF)
-		m.Text.draw()
-	}
-	// Draw debug text on top of everything
 	if a.DebugTextVisible && a.debugText != nil {
 		a.updateDebugText()
-		m := a.debugText
-		gl.Uniform3f(a.pText.uni("uPosition"), 0, 0, 1.0)
-		m.draw()
+		a.pText.use()
+		gl.UniformMatrix4fv(a.pText.uni("uProjectionMatrix"), 1, false,
+			&pMat[0])
+		a.fm.bind(a.pText)
+		gl.Uniform3f(a.pText.uni("uPosition"), 0, 0, 0)
+		a.debugText.draw(a.pText)
 	}
 	a.debugLines = a.debugLines[:0]
-	// Draw UI elements, cube mesh layer
-	a.pCubeMeshIcon.use()
-	gl.UniformMatrix4fv(a.pCubeMeshIcon.uni("uProjectionMatrix"), 1, false,
-		&pMat[0])
-	a.faces.bind(a.pCubeMeshIcon)
-	for _, m := range a.uiMeshes {
-		for _, d := range m.Cubes {
-			if d.Mesh == nil {
-				continue
-			}
-			mt := mgl32.Translate3D(
-				d.Position[0],
-				-d.Position[1],
-				-d.Position[2],
-			)
-			gl.UniformMatrix4fv(a.pCubeMeshIcon.uni("uModelMatrix"), 1, false,
-				&mt[0])
-			d.Mesh.draw(a.pCubeMeshIcon)
-		}
-	}
+	gl.Enable(gl.DEPTH_TEST)
 }

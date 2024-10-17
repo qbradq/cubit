@@ -54,6 +54,7 @@ func NewChunk(p t.IVec3) *Chunk {
 					float32(p[1]),
 					float32(p[2]),
 				},
+				Orientation: t.O(),
 			},
 			VoxelDDs: []*c3d.VoxelMeshDrawDescriptor{},
 		},

@@ -14,10 +14,11 @@ const vsTileDims int = 4
 // UIMesh is a drawable 2D orthographic mode object that can include ui tiles
 // and text.
 type UIMesh struct {
-	Text     *TextMesh                 // Text layer
+	text     *TextMesh                 // Text layer
 	Cubes    []*CubeMeshDrawDescriptor // List of all cube meshes to draw
 	Position mgl32.Vec2                // Position of the element in virtual screen units
 	Layer    uint16                    // Layer index, the higher the value the higher priority
+	app      *App                      // Parent application
 	d        []byte                    // Vertex buffer data
 	count    int32                     // Vertex count
 	vao      uint32                    // Vertex buffer array ID
@@ -26,15 +27,23 @@ type UIMesh struct {
 	vbuf     [6]byte                   // Vertex buffer
 }
 
-// newUIMesh creates a new UIMesh ready for use.
-func newUIMesh(f *fontManager, textPrg *program) *UIMesh {
+// NewUIMesh creates a new UIMesh ready for use.
+func newUIMesh(app *App) *UIMesh {
 	// Init
 	ret := &UIMesh{
-		vao:  invalidVAO,
-		vbo:  invalidVBO,
-		Text: newTextMesh(f, textPrg),
+		vao: invalidVAO,
+		vbo: invalidVBO,
+		app: app,
 	}
 	return ret
+}
+
+// Print as in c3d.TextMesh.Print.
+func (e *UIMesh) Print(x, y int, c [3]uint8, s string, args ...any) {
+	if e.text == nil {
+		e.text = e.app.NewTextMesh()
+	}
+	e.text.Print(x, y, c, s, args...)
 }
 
 // AddCube adds a cube to the list of cube meshes.
@@ -44,11 +53,15 @@ func (e *UIMesh) AddCube(m *CubeMeshDrawDescriptor) {
 
 // Reset resets the text object to blank. Internal memory buffers are retained
 // to reduce allocations.
-func (e *UIMesh) Reset() {
-	e.d = e.d[:0]
-	e.count = 0
-	e.vboDirty = true
-	e.Text.Reset()
+func (e *UIMesh) Reset(ui, text bool) {
+	if ui {
+		e.d = e.d[:0]
+		e.count = 0
+		e.vboDirty = true
+	}
+	if text && e.text != nil {
+		e.text.Reset()
+	}
 }
 
 // vert packs one vertex into the mesh.

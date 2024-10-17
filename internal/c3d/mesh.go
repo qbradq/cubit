@@ -14,7 +14,7 @@ type Mesh[T any] interface {
 
 // AddFace adds the given face with the given position and dimensions to the
 // mesh.
-func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
+func AddFace[T any](p, d [3]uint8, uvd uint8, f t.Facing, c T, m Mesh[T]) {
 	d[0] -= 1
 	d[1] -= 1
 	d[2] -= 1
@@ -22,6 +22,8 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 	case t.North:
 		u := d[0] + 1
 		v := d[1] + 1
+		u /= uvd
+		v /= uvd
 		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2], 0, 0, 0, c, f) // TL
 		m.vert(p[0], p[1]+d[1]+1, p[2], u, 0, 1, c, f)        // TR
 		m.vert(p[0]+d[0]+1, p[1], p[2], 0, v, 2, c, f)        // BL
@@ -31,6 +33,8 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 	case t.South:
 		u := d[0] + 1
 		v := d[1] + 1
+		u /= uvd
+		v /= uvd
 		m.vert(p[0], p[1]+d[1]+1, p[2]+1, 0, 0, 0, c, f)        // TL
 		m.vert(p[0]+d[0]+1, p[1]+d[1]+1, p[2]+1, u, 0, 1, c, f) // TR
 		m.vert(p[0], p[1], p[2]+1, 0, v, 2, c, f)               // BL
@@ -40,6 +44,8 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 	case t.East:
 		u := d[2] + 1
 		v := d[1] + 1
+		u /= uvd
+		v /= uvd
 		m.vert(p[0]+1, p[1]+d[1]+1, p[2]+d[2]+1, 0, 0, 0, c, f) // TL
 		m.vert(p[0]+1, p[1]+d[1]+1, p[2], u, 0, 1, c, f)        // TR
 		m.vert(p[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f)        // BL
@@ -49,6 +55,8 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 	case t.West:
 		u := d[2] + 1
 		v := d[1] + 1
+		u /= uvd
+		v /= uvd
 		m.vert(p[0], p[1]+d[1]+1, p[2], 0, 0, 0, c, f)        // TL
 		m.vert(p[0], p[1]+d[1]+1, p[2]+d[2]+1, u, 0, 1, c, f) // TR
 		m.vert(p[0], p[1], p[2], 0, v, 2, c, f)               // BL
@@ -58,6 +66,8 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 	case t.Top:
 		u := d[0] + 1
 		v := d[2] + 1
+		u /= uvd
+		v /= uvd
 		m.vert(p[0], p[1]+1, p[2], 0, 0, 0, c, f)               // TL
 		m.vert(p[0]+d[0]+1, p[1]+1, p[2], u, 0, 1, c, f)        // TR
 		m.vert(p[0], p[1]+1, p[2]+d[2]+1, 0, v, 2, c, f)        // BL
@@ -67,6 +77,8 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 	case t.Bottom:
 		u := d[0] + 1
 		v := d[2] + 1
+		u /= uvd
+		v /= uvd
 		m.vert(p[0]+d[0]+1, p[1], p[2], 0, 0, 0, c, f)        // TL
 		m.vert(p[0], p[1], p[2], u, 0, 1, c, f)               // TR
 		m.vert(p[0]+d[0]+1, p[1], p[2]+d[2]+1, 0, v, 2, c, f) // BL
@@ -77,7 +89,7 @@ func AddFace[T any](p, d [3]uint8, f t.Facing, c T, m Mesh[T]) {
 }
 
 // AddCube adds all of the faces of the given cube definition.
-func AddCube(p, d [3]uint8, f t.Facing, c *t.Cube, m *CubeMesh) {
+func AddCube(p, d [3]uint8, uvd uint8, f t.Facing, c *t.Cube, m *CubeMesh) {
 	fn := func(face t.Facing) t.Facing {
 		return t.FacingMap[f][face]
 	}
@@ -87,10 +99,10 @@ func AddCube(p, d [3]uint8, f t.Facing, c *t.Cube, m *CubeMesh) {
 	w := [3]uint8{p[0], p[1], p[2]}
 	top := [3]uint8{p[0], p[1] + d[1] - 1, p[2]}
 	b := p
-	AddFace(n, d, fn(t.North), t.CellForCube(c.Ref, f), m)
-	AddFace(s, d, fn(t.South), t.CellForCube(c.Ref, f), m)
-	AddFace(e, d, fn(t.East), t.CellForCube(c.Ref, f), m)
-	AddFace(w, d, fn(t.West), t.CellForCube(c.Ref, f), m)
-	AddFace(top, d, fn(t.Top), t.CellForCube(c.Ref, f), m)
-	AddFace(b, d, fn(t.Bottom), t.CellForCube(c.Ref, f), m)
+	AddFace(n, d, uvd, fn(t.North), t.CellForCube(c.Ref, f), m)
+	AddFace(s, d, uvd, fn(t.South), t.CellForCube(c.Ref, f), m)
+	AddFace(e, d, uvd, fn(t.East), t.CellForCube(c.Ref, f), m)
+	AddFace(w, d, uvd, fn(t.West), t.CellForCube(c.Ref, f), m)
+	AddFace(top, d, uvd, fn(t.Top), t.CellForCube(c.Ref, f), m)
+	AddFace(b, d, uvd, fn(t.Bottom), t.CellForCube(c.Ref, f), m)
 }

@@ -2,7 +2,9 @@
 #version 100
 
 uniform mat4 uModelMatrix;
-uniform mat4 uProjectionMatrix;
+uniform mat4 uProjectionMatrix; 
+uniform vec3 uPosition;
+uniform vec3 uOrigin;
 
 attribute vec3 aVertexPosition;
 attribute vec2 aAtlasXY;
@@ -17,8 +19,10 @@ void main() {
     uv = aVertexUV;
     atlasXY = aAtlasXY;
     lightLevel = aVertexLightLevel;
-	gl_Position = uProjectionMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);
-    gl_Position[2] = aVertexPosition[2];
+    vec3 pos = aVertexPosition - uOrigin;
+    pos = vec3(uModelMatrix * vec4(pos, 1.0));
+    pos = pos + uPosition;
+	gl_Position = uProjectionMatrix * vec4(pos, 1.0);
 }
 
 [FRAGMENT]

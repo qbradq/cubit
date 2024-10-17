@@ -10,13 +10,22 @@ import (
 // Faces is the global face atlas.
 var Faces *c3d.FaceAtlas = c3d.NewFaceAtlas()
 
-// GetCubeDef returns the CubeRef assigned to the given id.
-func GetCubeDef(id string) t.CubeRef {
+// GetCubeRef returns the CubeRef assigned to the given id.
+func GetCubeRef(id string) t.CubeRef {
 	c, found := cubeDefsById[id]
 	if !found {
 		return t.CubeRefInvalid
 	}
 	return c.Ref
+}
+
+// GetCubeDef returns the cube definition.
+func GetCubeDef(id string) *t.Cube {
+	c, found := cubeDefsById[id]
+	if !found {
+		return nil
+	}
+	return c
 }
 
 // registerCube registers a cube definition by name.

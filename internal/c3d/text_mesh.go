@@ -2,6 +2,7 @@ package c3d
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	gl "github.com/go-gl/gl/v3.1/gles2"
 	"github.com/qbradq/cubit/internal/t"
@@ -19,31 +20,14 @@ type TextMesh struct {
 	vbuf     [9]byte      // Vertex buffer
 }
 
-// newTextMesh creates a new text mesh with the given contents ready to use.
-func newTextMesh(f *fontManager, prg *program) *TextMesh {
+// NewTextMesh creates a new text mesh with the given contents ready to use.
+func newTextMesh(f *fontManager) *TextMesh {
 	// Init
 	ret := &TextMesh{
-		f: f,
+		vao: invalidVAO,
+		vbo: invalidVBO,
+		f:   f,
 	}
-	gl.GenVertexArrays(1, &ret.vao)
-	gl.GenBuffers(1, &ret.vbo)
-	// Configure buffer attributes
-	var stride int32 = 2*2 + 2*1 + 3*1
-	var offset int = 0
-	gl.BindVertexArray(ret.vao)
-	gl.BindBuffer(gl.ARRAY_BUFFER, ret.vbo)
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexPosition")),
-		2, gl.SHORT, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexPosition")))
-	offset += 2 * 2
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexUV")),
-		2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
-	offset += 2 * 1
-	gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexColor")),
-		3, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
-	gl.EnableVertexAttribArray(uint32(prg.attr("aVertexColor")))
-	offset += 3 * 1
 	return ret
 }
 
@@ -70,7 +54,8 @@ func (t *TextMesh) vert(x, y, u, v int, c [3]uint8) {
 }
 
 // Print prints a string at the given screen position in virtual screen units.
-func (text *TextMesh) Print(x, y int, c [3]uint8, s string) {
+func (text *TextMesh) Print(x, y int, c [3]uint8, s string, args ...any) {
+	s = fmt.Sprintf(s, args...)
 	if len(s) == 0 {
 		return
 	}
@@ -102,7 +87,30 @@ func (text *TextMesh) Print(x, y int, c [3]uint8, s string) {
 	}
 }
 
-func (t *TextMesh) draw() {
+func (t *TextMesh) draw(prg *program) {
+	if t.vao == invalidVAO {
+		gl.GenVertexArrays(1, &t.vao)
+	}
+	if t.vbo == invalidVBO {
+		gl.GenBuffers(1, &t.vbo)
+		// Configure buffer attributes
+		var stride int32 = 2*2 + 2*1 + 3*1
+		var offset int = 0
+		gl.BindVertexArray(t.vao)
+		gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
+		gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexPosition")),
+			2, gl.SHORT, false, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(prg.attr("aVertexPosition")))
+		offset += 2 * 2
+		gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexUV")),
+			2, gl.UNSIGNED_BYTE, false, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(prg.attr("aVertexUV")))
+		offset += 2 * 1
+		gl.VertexAttribPointerWithOffset(uint32(prg.attr("aVertexColor")),
+			3, gl.UNSIGNED_BYTE, true, stride, uintptr(offset))
+		gl.EnableVertexAttribArray(uint32(prg.attr("aVertexColor")))
+		offset += 3 * 1
+	}
 	if t.vboDirty {
 		if len(t.d) > 0 {
 			gl.BindVertexArray(t.vao)
@@ -110,6 +118,9 @@ func (t *TextMesh) draw() {
 			gl.BufferData(gl.ARRAY_BUFFER, len(t.d), gl.Ptr(t.d), gl.STATIC_DRAW)
 		}
 		t.vboDirty = false
+	}
+	if len(t.d) <= 0 {
+		return
 	}
 	gl.BindVertexArray(t.vao)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(t.d)))
