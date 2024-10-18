@@ -1,7 +1,6 @@
 package client
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"github.com/qbradq/cubit/internal/c3d"
 	"github.com/qbradq/cubit/internal/mod"
 	"github.com/qbradq/cubit/internal/t"
@@ -14,6 +13,7 @@ type toolBeltWidget struct {
 	items    [10]t.Cell                      // Cells in the tool belt
 	cds      [10]*c3d.CubeMeshDrawDescriptor // Cube meshes for the tool belt cells
 	selected int                             // Index of the selected slot
+	hover    int                             // Index of the slot the mouse is hovering over
 	dirty    bool                            // If true, the UI needs to be rebuilt
 }
 
@@ -26,22 +26,11 @@ func newToolBeltWidget(app *c3d.App) *toolBeltWidget {
 	ret.UIMesh.Layer = layerToolBelt
 	x := (t.VirtualScreenGlyphsWide - 40) / 2 * t.VirtualScreenGlyphSize
 	y := (t.VirtualScreenGlyphsHigh - 4) * t.VirtualScreenGlyphSize
-	x += t.VirtualScreenGlyphSize
-	y += t.VirtualScreenGlyphSize
-	ro := t.O().Translate(mgl32.Vec3{4, 4, 4}).Yaw(mgl32.DegToRad(225)).Pitch(
-		mgl32.DegToRad(30))
+	x += t.VirtualScreenGlyphSize * 2
+	y += t.VirtualScreenGlyphSize * 2
 	for i := range ret.items {
 		ret.items[i] = t.CellInvalid
-		ret.cds[i] = &c3d.CubeMeshDrawDescriptor{
-			ID:   uint32(i),
-			Mesh: c3d.NewCubeMesh(mod.CubeDefs),
-			Position: mgl32.Vec3{
-				float32(x + t.VirtualScreenGlyphSize),
-				float32(y + t.VirtualScreenGlyphSize),
-				0,
-			},
-			Orientation: ro,
-		}
+		ret.cds[i] = ret.CubeMeshIcon(x, y, 8, 8, 8, nil, t.North, mod.CubeDefs)
 		ret.UIMesh.Cubes = append(ret.UIMesh.Cubes, ret.cds[i])
 		x += t.VirtualScreenGlyphSize * 4
 	}
@@ -61,7 +50,7 @@ func (w *toolBeltWidget) updateMesh() {
 	y := t.VirtualScreenGlyphsHigh - 4
 	for i := range w.items {
 		np := npWindow
-		if i == w.selected {
+		if i == w.selected || i == w.hover {
 			np = npHighlight
 		}
 		w.UIMesh.NinePatch(
@@ -107,6 +96,20 @@ func (w *toolBeltWidget) update() {
 // input handles tool belt input.
 func (w *toolBeltWidget) input() {
 	s := w.selected
+	h := w.hover
+	l := (t.VirtualScreenGlyphsWide - 40) / 2
+	t := t.VirtualScreenGlyphsHigh - 4
+	pos := input.CursorGlyph
+	if pos[0] >= l && pos[0] < l+40 && pos[1] >= t && pos[1] < t+4 {
+		pos[0] -= l
+		pos[1] -= t
+		w.hover = pos[0] / 4
+		if input.ButtonPressed(0) {
+			w.selected = w.hover
+		}
+	} else {
+		w.hover = -1
+	}
 	if input.WasPressed("tool-belt-1") {
 		w.selected = 0
 	}
@@ -137,7 +140,7 @@ func (w *toolBeltWidget) input() {
 	if input.WasPressed("tool-belt-0") {
 		w.selected = 9
 	}
-	if s != w.selected {
+	if s != w.selected || h != w.hover {
 		w.dirty = true
 	}
 }

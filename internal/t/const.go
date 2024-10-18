@@ -31,7 +31,7 @@ const VirtualScreenGlyphsWide int = VirtualScreenWidth / VirtualScreenGlyphSize
 // VirtualScreenGlyphsHigh is the width of the screen in glyphs.
 const VirtualScreenGlyphsHigh int = VirtualScreenHeight / VirtualScreenGlyphSize
 
-// vsGlyphWidth is the width of one glyph in virtual screen units, minus boarder
+// VSGlyphWidth is the width of one glyph in virtual screen units, minus boarder
 // width.
 const VSGlyphWidth int = VirtualScreenWidth / VirtualScreenGlyphsWide
 

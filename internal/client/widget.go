@@ -6,6 +6,7 @@ import (
 
 const (
 	layerToolBelt  uint16 = 0x0100
+	layerPalette   uint16 = 0x0200
 	layerCursor    uint16 = 0x7FFF
 	layerConsole   uint16 = 0x7FFE
 	layerCrosshair uint16 = 0x7FFD

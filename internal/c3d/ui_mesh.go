@@ -18,6 +18,7 @@ type UIMesh struct {
 	Cubes    []*CubeMeshDrawDescriptor // List of all cube meshes to draw
 	Position mgl32.Vec2                // Position of the element in virtual screen units
 	Layer    uint16                    // Layer index, the higher the value the higher priority
+	Hidden   bool                      // If true, do not render the mesh or any of its children
 	app      *App                      // Parent application
 	d        []byte                    // Vertex buffer data
 	count    int32                     // Vertex count
@@ -133,7 +134,55 @@ func (e *UIMesh) NinePatch(x, y, w, h int, n NinePatch) {
 	e.Scaled(c[0][0], c[0][1], c[1][0], c[1][1], n[4])
 }
 
+// CubeMeshIcon adds an icon rendering of a cube mesh.
+func (e *UIMesh) CubeMeshIcon(x, y, w, h, d int, c *t.Cube, f t.Facing,
+	defs []*t.Cube) *CubeMeshDrawDescriptor {
+	hd := w
+	if h > hd {
+		hd = h
+	}
+	if d > hd {
+		hd = d
+	}
+	dx := float32(w / 2)
+	dy := float32(h / 2)
+	dz := float32(d / 2)
+	ro := t.O().Translate(mgl32.Vec3{dx, dy, dz}).Yaw(
+		mgl32.DegToRad(225)).Pitch(mgl32.DegToRad(30))
+	ret := &CubeMeshDrawDescriptor{
+		ID:   1,
+		Mesh: NewCubeMesh(defs),
+		Position: mgl32.Vec3{
+			float32(x),
+			float32(y),
+			0,
+		},
+		Orientation: ro,
+	}
+	if c == nil {
+		return ret
+	}
+	AddCube(
+		[3]uint8{0, 0, 0},
+		[3]uint8{
+			uint8(w),
+			uint8(h),
+			uint8(d),
+		},
+		uint8(hd), f,
+		c,
+		ret.Mesh,
+	)
+	e.Cubes = append(e.Cubes, ret)
+	return ret
+}
+
+// SetCube sets the
+
 func (e *UIMesh) draw(prg *program) {
+	if e.Hidden {
+		return
+	}
 	if e.vao == invalidVAO || e.vbo == invalidVBO {
 		gl.GenVertexArrays(1, &e.vao)
 		gl.GenBuffers(1, &e.vbo)

@@ -28,6 +28,15 @@ func GetCubeDef(id string) *t.Cube {
 	return c
 }
 
+// GetCubeDefFromRef returns the cube definition referenced by the cube
+// reference.
+func GetCubeDefFromRef(r t.CubeRef) *t.Cube {
+	if int(r) >= len(CubeDefs) {
+		return nil
+	}
+	return CubeDefs[r]
+}
+
 // registerCube registers a cube definition by name.
 func registerCube(c *t.Cube) error {
 	if _, duplicate := cubeDefsById[c.ID]; duplicate {

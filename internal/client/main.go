@@ -17,21 +17,23 @@ var mouseSensitivity float32 = 0.15
 var walkSpeed float32 = 5
 
 // Super globals
-var dt float32                       // Delta time for the current frame
-var runTime float32                  // Total runtime of the application
-var screenWidth int = 1280           // Width of the screen in pixels
-var screenHeight int = 720           // Height of the screen in pixels
-var win *glfw.Window                 // GLFW window
-var app *c3d.App                     // Graphics application
-var console *consoleWidget           // Console widget
-var toolBelt *toolBeltWidget         // Tool belt widget
-var input *Input                     // Input instance
-var world *t.World                   // The currently loaded world
-var debugVector mgl32.Vec3           // Debug vector
-var debugLines *c3d.LineMesh         // Debug lines mesh
-var cam *c3d.Camera                  // Player camera
-var cubeSelector *c3d.LineMesh       // Cube selection mesh
-var csDD *c3d.LineMeshDrawDescriptor // Cube selector draw descriptor
+var dt float32                                    // Delta time for the current frame
+var runTime float32                               // Total runtime of the application
+var screenWidth int = 1280                        // Width of the screen in pixels
+var screenHeight int = 720                        // Height of the screen in pixels
+var zoom int = screenWidth / t.VirtualScreenWidth // Zoom level
+var win *glfw.Window                              // GLFW window
+var app *c3d.App                                  // Graphics application
+var console *consoleWidget                        // Console widget
+var toolBelt *toolBeltWidget                      // Tool belt widget
+var palette *paletteWidget                        // Cell palette
+var input *Input                                  // Input instance
+var world *t.World                                // The currently loaded world
+var debugVector mgl32.Vec3                        // Debug vector
+var debugLines *c3d.LineMesh                      // Debug lines mesh
+var cam *c3d.Camera                               // Player camera
+var cubeSelector *c3d.LineMesh                    // Cube selection mesh
+var csDD *c3d.LineMeshDrawDescriptor              // Cube selector draw descriptor
 
 func init() {
 	c := [4]uint8{0, 255, 0, 255}
@@ -124,6 +126,7 @@ func Main() {
 		mod.GetUITile("/cubit/052"),
 	}
 	input = NewInput(win, mgl32.Vec2{float32(screenWidth), float32(screenHeight)})
+	// Add widgets
 	console = newConsoleWidget(app)
 	console.printf([3]uint8{0, 255, 255},
 		"%s: Welcome to Cubit!", time.Now().Format(time.DateTime))
@@ -132,6 +135,8 @@ func Main() {
 	toolBelt.setItem(t.CellForCube(mod.GetCubeRef("/cubit/cubes/grass"),
 		t.North), 0)
 	toolBelt.add(app)
+	palette = newPaletteWidget()
+	palette.add(app)
 	app.SetCrosshair(mod.GetUITile("/cubit/003"), layerCrosshair)
 	app.SetCursor(mod.GetUITile("/cubit/004"), layerCursor)
 	app.CrosshairVisible = true
@@ -144,8 +149,6 @@ func Main() {
 	chunk := NewChunk(t.IVec3{0, 0, 0})
 	chunk.update()
 	app.AddChunkDD(chunk.cdd)
-	c3d.AddCube([3]uint8{0, 4, 0}, [3]uint8{1, 1, 1}, 1, t.North,
-		mod.GetCubeDef("/cubit/cubes/grass"), chunk.cdd.CubeDD.Mesh)
 	model := mod.NewModel("/cubit/models/characters/brad")
 	model.DrawDescriptor.Orientation.P = mgl32.Vec3{6.5, 1.75, 10.5}
 	model.DrawDescriptor.Orientation = model.DrawDescriptor.Orientation.Yaw(180)
@@ -153,6 +156,7 @@ func Main() {
 	app.AddModelDD(model.DrawDescriptor)
 	cam = c3d.NewCamera(mgl32.Vec3{6.5, 2, 7})
 	cam.Yaw = 90.001
+	// TODO DEBUG REMOVE
 	debugLines = c3d.NewLineMesh()
 	app.AddLineDD(&c3d.LineMeshDrawDescriptor{
 		ID:   1,
@@ -173,6 +177,7 @@ func Main() {
 		model.Update(dt)
 		console.update()
 		toolBelt.update()
+		palette.update()
 		// Handle input
 		debugInput()
 		if console.isFocused() {
@@ -180,6 +185,7 @@ func Main() {
 		} else {
 			cameraInput(cam)
 			toolBelt.input()
+			palette.input()
 			editInput()
 		}
 		// TODO REMOVE

@@ -345,6 +345,9 @@ func (a *App) Draw(c *Camera) {
 		a.fm.updateAtlasTexture()
 	}
 	for _, m := range a.uiMeshes {
+		if m.Hidden {
+			continue
+		}
 		// UI tiles
 		if m.count > 0 {
 			a.pUI.use()

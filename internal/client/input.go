@@ -60,6 +60,7 @@ var KeyConfig = map[string][]keySpec{
 // Input manages the input and input configuration.
 type Input struct {
 	CursorPosition mgl32.Vec2         // Current position of the mouse on the screen
+	CursorGlyph    [2]int             // Current cursor position in units of glyphs
 	CursorDelta    mgl32.Vec2         // How far the mouse traveled this frame
 	CharsThisFrame []rune             // List of runes generated this frame
 	Mods           glfw.ModifierKey   // Modifier key mask this frame
@@ -133,6 +134,8 @@ func (n *Input) keyCallback(win *glfw.Window, key glfw.Key, scanCode int,
 func (n *Input) posCallback(w *glfw.Window, x, y float64) {
 	n.CursorPosition[0] = float32(x)
 	n.CursorPosition[1] = float32(y)
+	n.CursorGlyph[0] = int(x) / (t.VirtualScreenGlyphSize * zoom)
+	n.CursorGlyph[1] = int(y) / (t.VirtualScreenGlyphSize * zoom)
 	if !n.seenMousePos {
 		n.lastCursorPos = n.CursorPosition
 		n.seenMousePos = true
